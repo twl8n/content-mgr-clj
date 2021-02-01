@@ -1,7 +1,11 @@
-(ns machine.core
-  (:require [machine.state :refer :all]
+(ns cmgr.core
+  (:require [cmgr.state :refer :all]
             [clojure.string :as str]
-            [clojure.pprint :as pp])
+            [clojure.pprint :as pp]
+            [ring.adapter.jetty :as ringa]
+            [ring.util.response :as ringu]
+            [ring.middleware.params :refer [wrap-params]]
+            [ring.middleware.multipart-params :refer [wrap-multipart-params]])
   (:gen-class))
 
 ;; Workaround for the namespace changing to "user" after compile and before -main is invoked
@@ -55,7 +59,7 @@
   ;; (printf "state=%s\n" state)
   (if (nil? state)
     nil
-    (loop [tt (state @machine.state/table)
+    (loop [tt (state @cmgr.state/table)
            xx 1]
       (let [curr (first tt)
             test-result (user-input (nth curr 0))]
@@ -72,7 +76,7 @@
   (printf "state=%s\n" state)
   (if (nil? state)
     nil
-    (loop [tt (state @machine.state/table)]
+    (loop [tt (state @cmgr.state/table)]
       (let [curr (first tt)
             test-result ((nth curr 0))]
         (printf "curr=%s\n" curr)
@@ -83,41 +87,48 @@
               :else nil)))))
 
 
-(defn demo []
-  (add-state :if-logged-in)
-  (add-state :if-moderator)
-  (add-state :if-want-dashboard)
-  ;; (reset-state)
-  ;; (pp/pprint @machine.state/table)
-  (traverse :login)
-  )
+;; (defn expense-mgr-handler 
+;;   "Expense link manager."
+;;   [request]
+;;   (if (empty? (:params request))
+;;     nil
+;;     (let [temp-params (reduce-kv #(assoc %1 %2 (clojure.string/trim %3))  {} (:params request))
+;;           _ (prn "tp: " temp-params)
+;;           action (get temp-params "action")
+;;           ras  request
+;;           nice-date (check-limit-date temp-params)
+;;           [using-year using-month] (check-uy {:date nice-date
+;;                                               :using-year (or (get temp-params "using_year") "")
+;;                                               :using-month (or (get temp-params "using_month") "")})
+;;           _ (prn "nice-date: " nice-date " limit-date: " (get temp-params "limit_date") " date: " (get temp-params "date") " uy: " using-year " um: " using-month)
+;;           ;; Add :using-year, replace "date" value with a better date value
+;;           working-params (merge temp-params
+;;                                 {:using-year using-year
+;;                                  :using-month using-month
+;;                                  :limit-date nice-date
+;;                                  "date" nice-date})
+;;           ;; rmap is a list of records from the db, will full category data
+;;           rmap (request-action working-params action)]
+;;       (prn "wp: " working-params)
+;;       (reply-action rmap action working-params))))
 
-(defn demo2 []
-  (reset-state)
-  (swap! app-state #(merge % {:if-logged-in true}))
-  (println "initial state:" @app-state)
-  (traverse :login)
-  )
+(defn handler
+  [request]
+  (let [temp-params (reduce-kv #(assoc %1 %2 (clojure.string/trim %3))  {} (:params request))
+          d_state (or (get temp-params "d_state" :page_search))]
+      (traverse :page_search)
+      {:status 200
+       :headers {"Content-Type" "text/html"}
+       :body @cmgr.state/html-out}
+      ))
 
-(defn demo3 []
-  (reset-state)
-  (swap! app-state #(merge % {:if-logged-in true :if-on-dashboard true}))
-  (println "initial state:" @app-state)
-  (traverse :login))
 
-(defn demo4 []
-  (reset-state)
-  (swap! app-state #(merge % {:if-logged-in true :if-on-dashboard false :if-want-dashboard true :if-moderator true}))
-  (println "initial state:" @app-state)
-  (traverse :login))
+(def app
+  (wrap-multipart-params (wrap-params handler)))
 
-(defn demo4-debug []
-  (reset-state)
-  ;; Setting app-state makes no sense in a debug setting. The user will answer all the if- state tests.
-  (loop []
-    (traverse-debug :login)
-    (if (go-again) (recur)
-        nil)))
+;; Unclear how defonce and lein ring server headless will play together.
+(defn ds []
+  (defonce server (ringa/run-jetty app {:port 8080 :join? false})))
 
 
 (defn -main
@@ -126,7 +137,9 @@
   (printf "args: %s\n" args)
   ;; Workaround for the namespace changing to "user" after compile and before -main is invoked
   (in-ns true-ns)
+
+  (ds)
+  (prn "server: " server)
+  (.start server)
   
-  (let [first-arg (nth args 0)]
-    (if (= first-arg "debug") (traverse-debug :page_search)
-        (traverse :page_search))))
+  )

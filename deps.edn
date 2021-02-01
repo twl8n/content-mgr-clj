@@ -10,6 +10,9 @@
   ;; org.clojure/java.jdbc {:mvn/version "0.7.5"}
   seancorfield/next.jdbc {:mvn/version "1.1.613"} ;; Requires clojure 1.10.2
   ;; com.layerware/hugsql {:mvn/version "0.5.1"}
+  ring {:mvn/version "1.8.2"}
+  ;; ring/ring-core {:mvn/version "1.8.2"}
+  ;; ring/ring-jetty-adapter {:mvn.version "1.8.2"}
   }
 
  :aliases 

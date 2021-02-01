@@ -1,11 +1,11 @@
-(ns machine.state
+(ns cmgr.state
   (:require [clojure.string :as str]
-            ;; [clojure.java.jdbc :as jdbc]
             [next.jdbc :as jdbc]
             [next.jdbc.result-set :as rs]
             [clostache.parser :as clostache] ;; [clostache.parser :refer [render]]
-            ;; [hugsql.core :as hugsql]
             [clojure.pprint :as pp]))
+
+(def html-out (atom""))
 
 ;; I think db is a "connection"
 (def db {:dbtype "sqlite" :dbname "cmgr.db"})
@@ -98,30 +98,35 @@
   ;; $owner = `/usr/bin/id -un`;
   ;; chomp($owner);
   ;; do_sql_simple("hondavfr","","select * from page where owner='\$owner'");
-  ;; #default, fields to search, found records field
-  
-  ;; do_search() limits the rows we keep. This probably excludes valid_page=0 aka invalid pages.
-  ;; my $findme_col = $_[0]; # col to search
-  ;; my $default_findme = $_[1]; # string to search for
-  ;; my $def_str = $_[2];  # ??
-  ;; my $rank = $_[3]; # name of the ranking field, aka the found record flag
-  ;; my $extras_list = $_[4]; # s, es, recordsfound
+  ;; # default, fields to search, found records field
+  ;; # do_search() limits the rows we keep. This probably excludes valid_page=0 aka invalid pages.
+  ;; # my $findme_col = $_[0]; # col to search
+  ;; # my $default_findme = $_[1]; # string to search for
+  ;; # my $def_str = $_[2];  # ??
+  ;; # my $rank = $_[3]; # name of the ranking field, aka the found record flag
+  ;; # my $extras_list = $_[4]; # s, es, recordsfound
   ;; do_search("valid_page:1 valid_page:0", "page_pk,valid_page,page_title,body_title,page_name,site_name", "rank");
-  
   ;; dcc("dcc_site", "site_name", [""], ["site_name,at"]);
   ;; dcc("dcc_page", "page_pk", ["rank >= 1"],["page_order,an"]);
   ;; $findme_encoded = www_quote($findme);
   ;; render("","Content-type: text/html\n\n","page_search.html", "");
-
   
   (let [params {}
-        result-set (jdbc/execute! ds-opts
-                                  ["select * from page where valid_page=1"])]
-    
-    (clostache/render (assoc params
-                       :sys-msg "trying all-language"
-                       :dcc_site (group-by (juxt :site_name :page_pk) result-set))
-                      (slurp "resources/html/list.html"))
+        result-set (jdbc/execute! ds-opts ["select * from page where valid_page=1 order by site_name,page_order"])
+        db-data {:dcc_site (mapv (fn [xx] {:site_name (key xx)
+                                           :dcc_page (val xx)}) (group-by :site_name result-set))}
+        recf (count (:dcc_site db-data))
+        ready-data (merge params
+                          {:recordsfound recf
+                           :s (if (> recf 1) "s" "")
+                           :template "page_search.html"
+                           :_d_state "d state"
+                           :findme_encoded "foo"}
+                          db-data
+                          )
+        html-result (clostache/render (slurp "html/page_search.html") ready-data)]
+    (spit "tmp.html" html-result)
+    (reset! html-out html-result)
     )
   )
 
@@ -136,46 +141,26 @@
                   :_d_state "d state"
                   :findme_encoded "foo"}
                  {:dcc_site (mapv (fn [xx] {:site_name (key xx)
-                                           :dcc_page (val xx)}) (group-by :site_name result-set))})]
-      ;; (group-by (juxt :site_name :page_pk) result-set)
-      ;; (group-by :site_name result-set)
+                                            :dcc_page (val xx)}) (group-by :site_name result-set))})]
       (spit "tmp.html"
-      (clostache/render
-       (slurp "html/page_search.html")
-       ready-data))
+            (clostache/render
+             (slurp "html/page_search.html")
+             ready-data))
       (def rd ready-data)
       )
     )
 
-(def bar (jdbc/execute! ds-opts ["select * from page where valid_page=1 limit 2"]))
-(group-by  (fn [xx] {:site_name (:site_name xx) :dcc_page xx}) bar)
+  (def bar (jdbc/execute! ds-opts ["select * from page where valid_page=1 limit 2"]))
+  (group-by  (fn [xx] {:site_name (:site_name xx) :dcc_page xx}) bar)
 
-(clostache/render
+  (clostache/render
    "stuff {{#dcc_site}} site_name: {{site_name}} {{#dcc_page}} page_name: {{page_name}} {{/dcc_page}} {{/dcc_site}} end"
    {:dcc_site [{:site_name "hondavfr" :dcc_page [{:page_name "intro"}{:page_name "cases"}]} {:site_name "bug"}]})
 
-(clostache/render
- "stuff {{#dcc_site}} site_name: {{site_name}} {{#dcc_page}} page_name: {{page_name}} {{/dcc_page}} {{/dcc_site}} end"
- rd)
-   {:recordsfound 1 :dcc_site (map (fn [xx] {:site_name (key xx) :dcc_page (val xx)}) (group-by :site_name bar))})
-
-
-  (def foo 
-    [["r850r" "aa" "fuel_pump_connector.html" 4219 8.1]
-     ["r850r" "aa" "review.html" 4233 9.0]
-     ["sorghum" "bb" "index.html" 4287 1.0]
-     ["trucks" "cc" "index.html" 4280 1.0]
-     ["trucks" "cc" "bench_seat.html" 4281 2.0]
-     ["trucks" "cc" "f250_window.html" 4282 3.0]
-     ["volkswagen" "dd" "index.html" 3982 1.0]
-     ["volkswagen" "dd" "golf_headlight.html" 3996 2.0]
-     [ "volkswagen" "dd" "golf_battery.html" 4271 3.0]])
-
-  ;; Create a list of hashes where keys are the field names
-  (def bar (map #(apply zipmap [[:site_name :x_var :page_name :page_pk :page_order] %]) foo))
-
-  ;; Create a list of lists [[site1 [pages]] [site2 [pages]] ...]
-  (group-by (juxt :site_name :x_var) bar)
+  (clostache/render
+   "stuff {{#dcc_site}} site_name: {{site_name}} {{#dcc_page}} page_name: {{page_name}} {{/dcc_page}} {{/dcc_site}} end"
+   rd)
+  {:recordsfound 1 :dcc_site (map (fn [xx] {:site_name (key xx) :dcc_page (val xx)}) (group-by :site_name bar))}
   )
 
 ;; default is page_search

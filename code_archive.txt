@@ -1,0 +1,17 @@
+
+  (def foo 
+    [["r850r" "aa" "fuel_pump_connector.html" 4219 8.1]
+     ["r850r" "aa" "review.html" 4233 9.0]
+     ["sorghum" "bb" "index.html" 4287 1.0]
+     ["trucks" "cc" "index.html" 4280 1.0]
+     ["trucks" "cc" "bench_seat.html" 4281 2.0]
+     ["trucks" "cc" "f250_window.html" 4282 3.0]
+     ["volkswagen" "dd" "index.html" 3982 1.0]
+     ["volkswagen" "dd" "golf_headlight.html" 3996 2.0]
+     [ "volkswagen" "dd" "golf_battery.html" 4271 3.0]])
+
+  ;; Create a list of hashes where keys are the field names
+  (def bar (map #(apply zipmap [[:site_name :x_var :page_name :page_pk :page_order] %]) foo))
+
+  ;; Create a list of lists [[site1 [pages]] [site2 [pages]] ...]
+  (group-by (juxt :site_name :x_var) bar)
