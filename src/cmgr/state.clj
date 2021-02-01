@@ -125,7 +125,6 @@
                           db-data
                           )
         html-result (clostache/render (slurp "html/page_search.html") ready-data)]
-    (spit "tmp.html" html-result)
     (reset! html-out html-result)
     )
   )
