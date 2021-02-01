@@ -1,11 +1,16 @@
+
+;; By specifying a clojure version in :deps, we will override the installed version (currently 1.10.1).
+;; > clojure -Spath src:/Users/twl/.m2/repository/org/clojure/clojure/1.9.0/clojure-1.9.0.jar:/Users/twl/.m2/repository/org/clojure/spec.alpha/0.1.143/spec.alpha-0.1.143.jar:/Users/twl/.m2/repository/org/clojure/core.specs.alpha/0.1.24/core.specs.alpha-0.1.24.jar
+
 {:deps
-
- ;; By specifying a clojure version here, we will override the installed version (currently 1.10.1).
- ;; > clojure -Spath src:/Users/twl/.m2/repository/org/clojure/clojure/1.9.0/clojure-1.9.0.jar:/Users/twl/.m2/repository/org/clojure/spec.alpha/0.1.143/spec.alpha-0.1.143.jar:/Users/twl/.m2/repository/org/clojure/core.specs.alpha/0.1.24/core.specs.alpha-0.1.24.jar
-
- {org.clojure/clojure {:mvn/version "1.9.0"}}
- ;; {org.clojure/clojure {:mvn/version "1.10.1"}}
- 
+ { ;; org.clojure/clojure {:mvn/version "1.9.0"}
+  org.clojure/clojure {:mvn/version "1.10.2"}
+  org.xerial/sqlite-jdbc {:mvn/version "3.21.0"}
+  de.ubercode.clostache/clostache {:mvn/version "1.4.0"}
+  ;; org.clojure/java.jdbc {:mvn/version "0.7.5"}
+  seancorfield/next.jdbc {:mvn/version "1.1.613"} ;; Requires clojure 1.10.2
+  ;; com.layerware/hugsql {:mvn/version "0.5.1"}
+  }
 
  :aliases 
  {:nrepl {:extra-deps {nrepl/nrepl {:mvn/version "0.8.3"}

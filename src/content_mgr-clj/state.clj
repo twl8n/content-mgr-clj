@@ -1,6 +1,49 @@
 (ns machine.state
   (:require [clojure.string :as str]
+            ;; [clojure.java.jdbc :as jdbc]
+            [next.jdbc :as jdbc]
+            [next.jdbc.result-set :as rs]
+            [clostache.parser :as clostache] ;; [clostache.parser :refer [render]]
+            ;; [hugsql.core :as hugsql]
             [clojure.pprint :as pp]))
+
+;; I think db is a "connection"
+(def db {:dbtype "sqlite" :dbname "cmgr.db"})
+
+;; 2021-01-31 We could use rs/as-unqualified-lower-maps, but since we're using lowercase in our schema,
+;; and since we're used to sql drivers returning the case shown in the schema (or uppercase) we don't have to
+;; force everything to lower at this time.
+
+;; with-options works on db or ds
+;; I guess ds-opts is a "datasource with options" in next.jdbc parlance.
+(def ds-opts (jdbc/with-options db {:return-keys true :builder-fn rs/as-unqualified-maps}))
+
+(comment
+  ;; Simpler because it relies on ds-opts having with-options
+  (def foo (jdbc/execute! ds-opts
+                          ["select * from page where site_name=? limit 3" "hondavfr"]))
+
+  ;; alternate stuff that works
+  ;; https://github.com/seancorfield/next-jdbc/blob/develop/doc/getting-started.md
+
+  ;; ds is clearly a "datasource"
+  (def ds (jdbc/get-datasource db))
+  (def foo (jdbc/execute! ds ["select * from page limit 1"]))
+
+  (def foo (jdbc/execute! ds
+                          ["select * from page limit 2"]
+                          {:return-keys true :builder-fn rs/as-unqualified-maps}))
+
+  (def foo (jdbc/execute! ds
+                          ["select * from page where site_name=? limit 1" "hondavfr"] 
+                          {:return-keys true :builder-fn rs/as-unqualified-maps}))
+
+  (def foo (jdbc/execute! ds
+                          ["select * from page where site_name=? limit 1" "hondavfr"] 
+                          {:return-keys true :builder-fn rs/as-unqualified-maps}))
+  )
+
+
 
 (defn msg [arg] (printf "%s\n" arg))
 
@@ -39,6 +82,101 @@
 (defn wait [] (msg "running wait, returning false") true) ;; return true because wait ends looping over tests
 (defn noop [] (printf "running noop\n"))
 
+(defn if-edit [] )
+(defn if-delete [] )
+(defn if-insert [] )
+(defn if-item [])
+(defn if-site_gen [] )
+
+(defn page_search []
+  ;; keep("findme,findme_encoded");
+  ;; $findme = CGI::unescape($findme);
+  ;; if ($findme_encoded)
+  ;; {
+  ;;     $findme = www_dequote($findme_encoded);
+  ;; }
+  ;; $owner = `/usr/bin/id -un`;
+  ;; chomp($owner);
+  ;; do_sql_simple("hondavfr","","select * from page where owner='\$owner'");
+  ;; #default, fields to search, found records field
+  
+  ;; do_search() limits the rows we keep. This probably excludes valid_page=0 aka invalid pages.
+  ;; my $findme_col = $_[0]; # col to search
+  ;; my $default_findme = $_[1]; # string to search for
+  ;; my $def_str = $_[2];  # ??
+  ;; my $rank = $_[3]; # name of the ranking field, aka the found record flag
+  ;; my $extras_list = $_[4]; # s, es, recordsfound
+  ;; do_search("valid_page:1 valid_page:0", "page_pk,valid_page,page_title,body_title,page_name,site_name", "rank");
+  
+  ;; dcc("dcc_site", "site_name", [""], ["site_name,at"]);
+  ;; dcc("dcc_page", "page_pk", ["rank >= 1"],["page_order,an"]);
+  ;; $findme_encoded = www_quote($findme);
+  ;; render("","Content-type: text/html\n\n","page_search.html", "");
+
+  
+  (let [params {}
+        result-set (jdbc/execute! ds-opts
+                                  ["select * from page where valid_page=1"])]
+    
+    (clostache/render (assoc params
+                       :sys-msg "trying all-language"
+                       :dcc_site (group-by (juxt :site_name :page_pk) result-set))
+                      (slurp "resources/html/list.html"))
+    )
+  )
+
+(comment
+  (def foo
+    (let [result-set (jdbc/execute! ds-opts
+                                    ["select * from page where valid_page=1 limit 2"])
+          ready-data
+          (merge {:recordsfound 1
+                  :s ""
+                  :template "page_search.html"
+                  :_d_state "d state"
+                  :findme_encoded "foo"}
+                 {:dcc_site (mapv (fn [xx] {:site_name (key xx)
+                                           :dcc_page (val xx)}) (group-by :site_name result-set))})]
+      ;; (group-by (juxt :site_name :page_pk) result-set)
+      ;; (group-by :site_name result-set)
+      (spit "tmp.html"
+      (clostache/render
+       (slurp "html/page_search.html")
+       ready-data))
+      (def rd ready-data)
+      )
+    )
+
+(def bar (jdbc/execute! ds-opts ["select * from page where valid_page=1 limit 2"]))
+(group-by  (fn [xx] {:site_name (:site_name xx) :dcc_page xx}) bar)
+
+(clostache/render
+   "stuff {{#dcc_site}} site_name: {{site_name}} {{#dcc_page}} page_name: {{page_name}} {{/dcc_page}} {{/dcc_site}} end"
+   {:dcc_site [{:site_name "hondavfr" :dcc_page [{:page_name "intro"}{:page_name "cases"}]} {:site_name "bug"}]})
+
+(clostache/render
+ "stuff {{#dcc_site}} site_name: {{site_name}} {{#dcc_page}} page_name: {{page_name}} {{/dcc_page}} {{/dcc_site}} end"
+ rd)
+   {:recordsfound 1 :dcc_site (map (fn [xx] {:site_name (key xx) :dcc_page (val xx)}) (group-by :site_name bar))})
+
+
+  (def foo 
+    [["r850r" "aa" "fuel_pump_connector.html" 4219 8.1]
+     ["r850r" "aa" "review.html" 4233 9.0]
+     ["sorghum" "bb" "index.html" 4287 1.0]
+     ["trucks" "cc" "index.html" 4280 1.0]
+     ["trucks" "cc" "bench_seat.html" 4281 2.0]
+     ["trucks" "cc" "f250_window.html" 4282 3.0]
+     ["volkswagen" "dd" "index.html" 3982 1.0]
+     ["volkswagen" "dd" "golf_headlight.html" 3996 2.0]
+     [ "volkswagen" "dd" "golf_battery.html" 4271 3.0]])
+
+  ;; Create a list of hashes where keys are the field names
+  (def bar (map #(apply zipmap [[:site_name :x_var :page_name :page_pk :page_order] %]) foo))
+
+  ;; Create a list of lists [[site1 [pages]] [site2 [pages]] ...]
+  (group-by (juxt :site_name :x_var) bar)
+  )
 
 ;; default is page_search
 
@@ -51,6 +189,7 @@
      [if-item :item_search]
      [if-site_gen :site_gen]
      [page_search nil]]
+    }))
     ;; 0	page_search	$edit	  null()	  edit_page
     ;; 1	page_search	$delete	  null()	  ask_delete_page
     ;; 2	page_search	$insert	  null()          edit_new_page
@@ -58,6 +197,9 @@
     ;; 4	page_search	$site_gen site_gen()	  next
     ;; 5	page_search	$true	  page_search()	  wait
 
+(comment table-part-two
+  (atom 
+   {
     :site_gen
     [[site_gen nil]
      [fntrue :page_search]]
@@ -148,32 +290,32 @@
 
 
 ;; {:state-edge [[test-or-func next-state-edge] ...]}
-(def orig-table
-  (atom
-   {:login
-    [[if-logged-in :pages]
-     [force-logout nil]
-     [draw-login nil]
-     [wait nil]]
+;; (def orig-table
+;;   (atom
+;;    {:login
+;;     [[if-logged-in :pages]
+;;      [force-logout nil]
+;;      [draw-login nil]
+;;      [wait nil]]
     
-    :login-input
-    [[if-logged-in :dashboard]
-     [login :login]]
+;;     :login-input
+;;     [[if-logged-in :dashboard]
+;;      [login :login]]
 
-    :pages
-    [[if-on-dashboard :dashboard-input]
-     [if-want-dashboard :dashboard]
-     [wait nil]]
+;;     :pages
+;;     [[if-on-dashboard :dashboard-input]
+;;      [if-want-dashboard :dashboard]
+;;      [wait nil]]
 
-    :dashboard
-    [[if-moderator :dashboard-moderator]
-     [draw-dashboard]
-     [wait nil]]
+;;     :dashboard
+;;     [[if-moderator :dashboard-moderator]
+;;      [draw-dashboard]
+;;      [wait nil]]
 
-    :dashboard-moderator
-    [[draw-dashboard-moderator :dashboard-input]]
+;;     :dashboard-moderator
+;;     [[draw-dashboard-moderator :dashboard-input]]
 
-    :dashboard-input
-    [[wait nil]]
-    }))
+;;     :dashboard-input
+;;     [[wait nil]]
+;;     }))
 

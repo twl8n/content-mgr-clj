@@ -1,0 +1,46 @@
+<html>
+<head>
+<title>vfr750_edit.html Record</title>
+</head>
+<body bgcolor="#FFFFFF">
+<form action="msedit.pl" method="POST">
+  <p> 
+    <input type=hidden name=db value="{db}">
+    <input type=hidden name=record_number value="{which_record}">
+    <input type="hidden" name="findme" value="{findme_encoded}">
+    <input type=hidden name=record_state value="{record_state}">
+    <input type="hidden" name="hiddenField">
+  </p>
+  <p>{value_0}<br>
+    Description:<br>
+    {textarea_5}<br>
+    <br>
+    <input type="submit" name="submit" value="Save & Continue">
+    &nbsp;&nbsp;&nbsp;&nbsp;
+    <input type=submit name="submit"value="Save">
+    &nbsp;&nbsp;&nbsp;&nbsp;    
+    <input type="submit" name="submit" value="Save & Edit Next">
+    <br>
+    <br>
+    image alt text: {text_6}<br>
+    item order: {text_7} <br>
+    <br>
+    valid_content {text_11} (integer zero or one)<br>
+    image_name: {text_2}<br>
+    <br>
+    <img src="../images/%7Bvalue_8%7D" width="{value_9}" height="{value_10}"> <br>
+  </p>
+  <p>page_fk: {text_1}<br>
+    image_width: {text_3}<br>
+    image_height: {text_4}<br>
+    s_name: {text_8}<br>
+    s_width: {text_9}<br>
+    s_height: {text_10}<br>
+    <input type="submit" name="submit" value="Save & Continue">
+    &nbsp;&nbsp;&nbsp;&nbsp; 
+    <input type=submit name="submit"value="Save">
+    <br>
+  </p>
+  </form>
+</body>
+</html>

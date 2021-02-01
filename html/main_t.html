@@ -1,0 +1,114 @@
+<html>
+  <head>
+    <title>{{page_title}}</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <link rel="stylesheet" href="cm_std.css" type="text/css">
+    
+    <script type="text/javascript">
+      <!--
+	  google_ad_client = "pub-2716280660683419";
+	  google_ad_width = 120;
+	  google_ad_height = 240;
+	  google_ad_format = "120x240_as";
+	  google_ad_type = "text_image";
+	  google_ad_channel = "";
+	  //-->
+    </script>
+    <! -- main_t.html -->
+       </head>
+  
+  <body bgcolor="#FFFFFF" text="#000000">
+    <div id="nav">
+      Our web sites<br>
+      <a href="http://infogizmo.com/"><nobr>InfoGizmo</nobr></a> 
+      <br>
+      <a href="http://defindit.com/"><nobr>DeFindIt Software</nobr></a>
+      <br>
+      <a href="http://laudeman.com/sorghum/"><nobr>Sorghum Syrup</nobr></a>
+      <br>
+      <a href="http://laudeman.com/r1100rt/"><nobr>BMW R1100RT PIAA</nobr></a>
+      <br>
+      <a href="http://laudeman.com/bmw_r850r/"><nobr>BMW R850R</nobr></a>
+      <br>
+      <a href="http://laudeman.com/hondavfr/"><nobr>Honda VFR750F</nobr></a>
+      <br>
+      <a href="http://laudeman.com/hondavlx/"><nobr>Honda Shadow VLX</nobr></a>
+      <br>
+      <a href="http://laudeman.com/bug.html"><nobr>VW Bug</nobr></a>
+      <br>
+      <a href="http://laudeman.com/cabrio/"><nobr>VW Cabriolet</nobr></a>
+      <br>
+      <a href="http://laudeman.com/volkswagen/"><nobr>Golf, Jetta, NB</nobr></a>
+      <br>
+      <a href="http://laudeman.com/trucks/"><nobr>Wrangler and F-250</nobr></a>
+      <br>
+      <a href="http://laudeman.com/klr650/"><nobr>Kawasaki KLR650</nobr></a>
+      <br>
+      <a href="http://laudeman.com/bmw2002.html"><nobr>BMW 2002</nobr></a>
+      <br>
+      <a href="http://laudeman.com/downhome/"><nobr>Abby's Down Home</nobr></a>
+      <br>
+      <a href="http://laudeman.com/"><nobr>laudeman.com</nobr></a>
+      <br>
+      <a href="http://laudeman.com/tom_mail.html"><nobr>Contact Tom</nobr></a>
+      <br>
+      Click images to enlarge.
+
+      <hr>
+      <div id="gad" align="left">
+	<script type="text/javascript"
+		src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+	</script>
+      </div>
+    </div>
+
+    <!-- end nav -->
+
+    <div id="content">
+      <p>
+        <div align="center">{{body_title}}</div>
+      </p>
+      <p>	  
+	{{menu_text}}
+      </p>
+      <hr>
+      {{#start_outer}}
+      <div class="entry">
+	<!-- {c $dcc_start_outer start &lt;div -2 stop &lt;/div&gt; +2 } -->
+        {{#start_inner}}
+        <a href="{{pf_name}}">
+          <img src="{{image_dir}}/{{s_name}}"
+               width="{{s_width}}"
+               height="{{s_height}}"
+               border="0"
+               alt="{{alt_text}}"
+               vspace="0"
+               hspace="10"
+               align="right">
+        </a>
+        {{description}}
+	<!-- {c $dcc_start_inner start &lt;a -2 stop &lt;/div +1} -->
+	<br clear="all">
+        {{/start_inner}
+      </div>
+      {{/start_outer}}
+      
+      {{remainder}}
+      <div class="entry">
+        <!-- {c $dcc_remainder start &lt;div -2 stop &lt;/div&gt; +2 } -->
+        <a href="{{pf_name}}">
+          <img src="{{image_dir}}/{{s_name}}"
+               width="{{s_width}}"
+               height="{{s_height}}"
+               border="0"
+               align="right"
+               alt="{{alt_text}}"
+               vspace="0"
+               hspace="10"></a>
+        {{description}}
+	<br clear="all">
+      </div>
+      {{/remainder}}
+    </div> <!-- end content -->
+  </body>
+</html>

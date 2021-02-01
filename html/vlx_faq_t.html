@@ -1,0 +1,119 @@
+<html>
+<head>
+<title>$page_title</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+
+<body bgcolor="#FFFFFF" text="#000000">
+<div align="center">
+  <table width="600" border="0" cellspacing="0" cellpadding="0">
+    <tr> 
+      <td height="17"> 
+        <p align="center"><b><font face="Verdana, Arial, Helvetica, sans-serif"><br>
+          $body_title<br>
+          <br>
+          </font></b></p>
+      </td>
+    </tr>
+  </table>
+  <br>
+  <div align="center"> 
+  $menu_text
+  <br>
+  <table border=0 cellspacing=0 cellpadding=3 width="700">
+    <tr> 
+      <td bgcolor="#99CCCC" valign=top>Searching Tom's VLX FAQ returned $recordsfound page$s.
+      </td>
+    </tr>
+    <tr> 
+      <td bgcolor="#99CCCC" valign=top> 
+        <div align="center"><a href="#help">Click here for search help</a> 
+          <form action="machine.pl" method=POST>
+	  <input type="hidden" name="ginfo" value="vlxfaq">
+	  <input type=text name=findme value="$findme" size=50>
+          <input type=submit name=Submit value="Search">
+          </form>
+        </div>
+      </td>
+    </tr>
+  </table>
+  <table width="700" border="0" cellspacing="0" cellpadding="0">
+      <tr valign="top"> 
+        <td colspan="3">&nbsp;
+	<img src="images/ff3333_line_spacer.jpg" width="700" height="5"><br>
+	<img src="images/ff3333_spacer.jpg" width="700" height="5">
+	</td>
+      </tr>
+    <tr valign="top"> 
+      <td  bgcolor="#eeeeee" valign="top">
+      {$dcc_faq_pk start &lt;tr -2 stop &lt;/tr&gt; +4 }
+      <b>question:</b>$question
+      </td>
+    </tr>
+    <tr> 
+      <td><br>
+        answer: $answer <br><font size="-1">matching terms: $rank</font>
+        <hr>
+
+	<br clear="all">
+	<div> &nbsp;</div>
+      </td>
+    </tr>
+  </table>
+  <table width="700" border="0" cellspacing="0" cellpadding="0">
+    <tr>
+      <td>
+        <p><a name="help"></a> Search Help 
+        <p>By default the search will match whole words. Use * to match part of 
+          a word (this is called a 'wildcard'). 
+        <p>Examples of partial word matches. Respectively, these will match: sparkplug, 
+          windshield, tires
+        <p>spark*<br>
+          *shield<br>
+          tire* 
+        <p>You can use what is commonly called &quot;search engine arithmatic&quot; 
+          A plus sign + at the beginning of a word will force that word to be 
+          included. Only results that contain that word will appear. Likewise 
+          a minus - at the beginning of a word will only return results that do 
+          not contain that work. 
+        <p> 
+        <p>The following search returns information about &quot;fuel&quot; that 
+          also includes the word &quot;line&quot;: 
+        <p> 
+        <p>fuel +line 
+        <p>The following search returns information about &quot;wire&quot; that 
+          does not include &quot;spark&quot;: 
+        <p>+wire -spark 
+        <p> 
+        <p>The minus - is confusing since all non-matching information is returned. 
+          It is easy to get back ALL the information in the FAQ database. Use 
+          the + as in the example above to require certain terms to get a more 
+          restricted search. 
+        <p> 
+        <p>You can also use the double quote &quot; to force the search engine 
+          to use a phrase instead of matching individual words: 
+        <p>&quot;timing mark&quot; 
+        <p> 
+        <p> 
+        <p> 
+        <p> 
+        <p> 
+        <p> 
+        <p>You can also search only the question or only the answer sections of 
+          the database. Use the &quot;question:word&quot; or &quot;answer:word&quot; 
+          syntax. 
+        <p>question:running<br>
+          answer:alternator<br>
+          <br>
+          <br>
+        <p> 
+        <p> 
+        <p> 
+        <p> 
+        <p> 
+      </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>
