@@ -1,6 +1,7 @@
 (ns cmgr.state
   (:require [clojure.string :as str]
             [next.jdbc :as jdbc]
+            [next.jdbc.sql :as sql]
             [next.jdbc.result-set :as rs]
             [clostache.parser :as clostache] ;; [clostache.parser :refer [render]]
             [clojure.pprint :as pp]))
@@ -18,35 +19,14 @@
 ;; I guess ds-opts is a "datasource with options" in next.jdbc parlance.
 (def ds-opts (jdbc/with-options db {:return-keys true :builder-fn rs/as-unqualified-maps}))
 
-(comment
-  ;; Simpler because it relies on ds-opts having with-options
-  (def foo (jdbc/execute! ds-opts
-                          ["select * from page where site_name=? limit 3" "hondavfr"]))
-
-  ;; alternate stuff that works
-  ;; https://github.com/seancorfield/next-jdbc/blob/develop/doc/getting-started.md
-
-  ;; ds is clearly a "datasource"
-  (def ds (jdbc/get-datasource db))
-  (def foo (jdbc/execute! ds ["select * from page limit 1"]))
-
-  (def foo (jdbc/execute! ds
-                          ["select * from page limit 2"]
-                          {:return-keys true :builder-fn rs/as-unqualified-maps}))
-
-  (def foo (jdbc/execute! ds
-                          ["select * from page where site_name=? limit 1" "hondavfr"] 
-                          {:return-keys true :builder-fn rs/as-unqualified-maps}))
-
-  (def foo (jdbc/execute! ds
-                          ["select * from page where site_name=? limit 1" "hondavfr"] 
-                          {:return-keys true :builder-fn rs/as-unqualified-maps}))
-  )
-
-
 
 (defn msg [arg] (printf "%s\n" arg))
 
+(def params (atom {}))
+
+(defn set-params [xx]
+  (reset! params xx))
+  
 (def app-state (atom {}))
 
 (defn reset-state [] 
@@ -82,46 +62,42 @@
 (defn wait [] (msg "running wait, returning false") true) ;; return true because wait ends looping over tests
 (defn noop [] (printf "running noop\n"))
 
-(defn if-edit [] )
+(defn if-edit []
+  (let [ret (= "Edit page" (:edit @params))]
+    (swap! params #(dissoc % :edit))
+    ret))
+
 (defn if-delete [] )
 (defn if-insert [] )
-(defn if-item [])
+
+(defn if-item []
+  (let [ret (= "Edit content" (:item @params))]
+    (swap! params #(dissoc % :item))
+  ret))
+
 (defn if-site_gen [] )
 
+(defn if-save []
+  (let [ret (= "Save" (:save @params))]
+    (swap! params #(dissoc % :save))
+    ret))
+
+(defn if-continue []
+  (let [ret (= "Save & Continue" (:continue @params))]
+    (swap! params #(dissoc % :continue))
+    ret))
+        
+(defn if-next [] )
+
 (defn page_search []
-  ;; keep("findme,findme_encoded");
-  ;; $findme = CGI::unescape($findme);
-  ;; if ($findme_encoded)
-  ;; {
-  ;;     $findme = www_dequote($findme_encoded);
-  ;; }
-  ;; $owner = `/usr/bin/id -un`;
-  ;; chomp($owner);
-  ;; do_sql_simple("hondavfr","","select * from page where owner='\$owner'");
-  ;; # default, fields to search, found records field
-  ;; # do_search() limits the rows we keep. This probably excludes valid_page=0 aka invalid pages.
-  ;; # my $findme_col = $_[0]; # col to search
-  ;; # my $default_findme = $_[1]; # string to search for
-  ;; # my $def_str = $_[2];  # ??
-  ;; # my $rank = $_[3]; # name of the ranking field, aka the found record flag
-  ;; # my $extras_list = $_[4]; # s, es, recordsfound
-  ;; do_search("valid_page:1 valid_page:0", "page_pk,valid_page,page_title,body_title,page_name,site_name", "rank");
-  ;; dcc("dcc_site", "site_name", [""], ["site_name,at"]);
-  ;; dcc("dcc_page", "page_pk", ["rank >= 1"],["page_order,an"]);
-  ;; $findme_encoded = www_quote($findme);
-  ;; render("","Content-type: text/html\n\n","page_search.html", "");
-  
-  (let [params {}
-        result-set (jdbc/execute! ds-opts ["select * from page where valid_page=1 order by site_name,page_order"])
+  (let [result-set (jdbc/execute! ds-opts ["select * from page where valid_page=1 order by site_name,page_order"])
         db-data {:dcc_site (mapv (fn [xx] {:site_name (key xx)
                                            :dcc_page (val xx)}) (group-by :site_name result-set))}
         recf (count (:dcc_site db-data))
-        ready-data (merge params
+        ready-data (merge @params
                           {:recordsfound recf
-                           :s (if (> recf 1) "s" "")
-                           :template "page_search.html"
-                           :_d_state "d state"
-                           :findme_encoded "foo"}
+                           :d_state "page_search"
+                           :s (if (> recf 1) "s" "")}
                           db-data
                           )
         html-result (clostache/render (slurp "html/page_search.html") ready-data)]
@@ -129,38 +105,45 @@
     )
   )
 
-(comment
-  (def foo
-    (let [result-set (jdbc/execute! ds-opts
-                                    ["select * from page where valid_page=1 limit 2"])
-          ready-data
-          (merge {:recordsfound 1
-                  :s ""
-                  :template "page_search.html"
-                  :_d_state "d state"
-                  :findme_encoded "foo"}
-                 {:dcc_site (mapv (fn [xx] {:site_name (key xx)
-                                            :dcc_page (val xx)}) (group-by :site_name result-set))})]
-      (spit "tmp.html"
-            (clostache/render
-             (slurp "html/page_search.html")
-             ready-data))
-      (def rd ready-data)
-      )
-    )
+(reset! params {:page_pk 2030})
+(:page_pk @params)
 
-  (def bar (jdbc/execute! ds-opts ["select * from page where valid_page=1 limit 2"]))
-  (group-by  (fn [xx] {:site_name (:site_name xx) :dcc_page xx}) bar)
+(defn edit_page []
+  (let [result-set (jdbc/execute-one! ds-opts ["select * from page where page_pk=?" (:page_pk @params)])
+        [ext_one ext_zero] (if (= 1 (:external_url @params)) ["selected" ""] ["" "selected"])
+        ready-data (merge result-set
+                          {:template "edit_page.html"
+                           :d_state "edit_page"
+                           :ext_one ext_one
+                           :ext_zero ext_zero}
+                          )
+        html-result (clostache/render (slurp "html/edit_page.html") ready-data)]
+    (reset! html-out html-result)))
 
-  (clostache/render
-   "stuff {{#dcc_site}} site_name: {{site_name}} {{#dcc_page}} page_name: {{page_name}} {{/dcc_page}} {{/dcc_site}} end"
-   {:dcc_site [{:site_name "hondavfr" :dcc_page [{:page_name "intro"}{:page_name "cases"}]} {:site_name "bug"}]})
+    ;; do_sql_simple("hondavfr", "", "update page set template='\$template', menu='\$menu', page_title='\$page_title', body_title='\$body_title', page_name='\$page_name', search_string='\$search_string', image_dir='\$image_dir', site_name='\$site_name', site_path='\$site_path', owner='\$owner', page_order='\$page_order', valid_page='\$valid_page', external_url='\$external_url' where page_pk=\$page_pk"); 
 
-  (clostache/render
-   "stuff {{#dcc_site}} site_name: {{site_name}} {{#dcc_page}} page_name: {{page_name}} {{/dcc_page}} {{/dcc_site}} end"
-   rd)
-  {:recordsfound 1 :dcc_site (map (fn [xx] {:site_name (key xx) :dcc_page (val xx)}) (group-by :site_name bar))}
-  )
+(defn save_page []
+  (let [result-set (sql/update! ds-opts
+                                :page
+                                (select-keys @params
+                                             [:template :menu :page_title :body_title
+                                              :page_name :search_string :image_dir
+                                              :site_name :site_path :page_order
+                                              :valid_page :external_url :page_pk])
+                                {:page_pk (:page_pk @params)})]
+    true))
+
+;; [ext_one ext_zero] (if (= 1 (:external_url @params)) ["selected" ""] ["" "selected"])
+;;         ready-data (merge @params
+;;                           {:template "edit_page.html"
+;;                            :d_state "edit_page"
+;;                            :ext_one ext_one
+;;                            :ext_zero ext_zero}
+;;                           )
+;;         html-result (clostache/render (slurp "html/edit_page.html") ready-data)]
+;;     (reset! html-out html-result)))
+
+(defn next_page [] )
 
 ;; default is page_search
 
@@ -173,6 +156,31 @@
      [if-item :item_search]
      [if-site_gen :site_gen]
      [page_search nil]]
+
+    :edit_page
+    [[if-save :save_page]
+     [if-continue :save_page_continue]
+     [if-next :save_next]
+     [edit_page nil]]
+    ;; 0	edit_page	$save	  save_page()	  page_search
+    ;; 1	edit_page	$continue save_page()	  next
+    ;; 2	edit_page	$next	  save_page()	  next
+    ;; 3	edit_page	$next	  next_page()	  next
+    ;; 4	edit_page	$true	  edit_page()	  wait
+
+    :save_page
+    [[save_page nil]
+     [page_search nil]]
+
+    :save_page_continue
+    [[save_page nil]
+     [edit_page nil]]
+
+    :save_next
+    [[save_page nil]
+     [next_page nil]
+     [edit_page nil]]
+
     }))
     ;; 0	page_search	$edit	  null()	  edit_page
     ;; 1	page_search	$delete	  null()	  ask_delete_page
@@ -197,27 +205,6 @@
     :delete_page
     [[delete_page :page_search]]
 
-    :edit_page
-    [[if-save :save_page]
-     [if-continue :save_page_continue]
-     [if-next :save_next]
-     [edit_page nil]]
-    ;; 0	edit_page	$save	  save_page()	  page_search
-    ;; 1	edit_page	$continue save_page()	  next
-    ;; 2	edit_page	$next	  save_page()	  next
-    ;; 3	edit_page	$next	  next_page()	  next
-    ;; 4	edit_page	$true	  edit_page()	  wait
-
-    :save_page
-    [[save_page :page_search]]
-
-    :save_page_continue
-    [[save_page nil]
-     [edit_page :edit_page]]
-
-    :save_next
-    [[save_page nil]
-     [next_page :edit_page]]
 
     :edit_new_page
     [[if-save :insert_page]

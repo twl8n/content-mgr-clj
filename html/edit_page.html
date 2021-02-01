@@ -1,96 +1,97 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
-<head>
-  <title>Edit page info</title>
-</head>
-<body bgcolor="#ffffff">
-<form action="" method="post">
- <input name="findme" value="{{findme_encoded}}" type="hidden">
- <input  name="_d_state" value="{{_d_state}}" type="hidden">
- <input  name="page_pk" value="{{page_pk}}" type="hidden">
-  <input name="continue" value="Save &amp; Continue" type="submit">&nbsp;&nbsp;&nbsp;&nbsp;
-  <input name="save" value="Save" type="submit">&nbsp;&nbsp;&nbsp;&nbsp;
-  <input name="next" value="Save &amp; Edit Next" type="submit">
-  <p></p>
-  <table style="text-align: left; width: 813px; height: 184px;"
- border="0" cellpadding="3" cellspacing="0">
-    <tbody>
-      <tr>
-        <td style="width: 111px; text-align: right;">page_pk</td>
-        <td style="width: 684px; text-align: left;">{{page_pk}}</td>
-      </tr>
-      <tr>
-        <td style="width: 111px; text-align: right;">Owner</td>
-        <td style="width: 684px;">{{owner}}</td>
-      </tr>
-      <tr>
-        <td style="width: 111px; text-align: right;">Template</td>
-        <td style="width: 684px;"><input name="template" value="{{template}}" size="60" type="text"></td>
-      </tr>
-      <tr>
-        <td style="width: 111px; text-align: right;">Menu</td>
-        <td style="width: 684px;"><input name="menu" value="{{menu}}" size="60" type="text"></td>
-      </tr>
-      <tr>
-        <td style="width: 111px; text-align: right;">Page title</td>
-        <td style="width: 684px;"><input name="page_title" value="{{page_title}}" size="60" type="text"></td>
-      </tr>
-      <tr>
-        <td style="width: 111px; text-align: right;">Body title</td>
-        <td style="width: 684px;"><input name="body_title" value="{{body_title}}" size="60" type="text"></td>
-      </tr>
-      <tr>
-        <td style="width: 111px; text-align: right;">Page name</td>
-        <td style="width: 684px;"><input name="page_name"
-           value="{{page_name}}" size="60" type="text"><br>
-           html file name i.e. index.html or external url i.e. search.pl
-      </td>
-      </tr>
-      <tr>
-        <td style="width: 111px; text-align: right;">External URL</td>
-        <td style="width: 684px;"><select name="external_url">
-            <option value="0" {{ext_zero}}>normal page</option>
-            <option value="1" {{ext_one}} >external URL</option>
-	    </select>
-	</td>
-      </tr>
-      <tr>
-        <td style="width: 111px; text-align: right;">search_string</td>
-        <td style="width: 684px;"><input name="search_string"  value="{{search_string}}" size="60" type="text"></td>
-      </tr>
-      <tr>
-        <td style="width: 111px; text-align: right;">Image folder</td>
-        <td style="width: 684px;"><input name="image_dir"
- value="{{image_dir}}" size="60" type="text"></td>
-      </tr>
-      <tr>
-        <td style="width: 111px; text-align: right;">Site name</td>
-        <td style="width: 684px;"><input name="site_name"
- value="{{site_name}}" size="60" type="text"></td>
-      </tr>
-      <tr>
-        <td style="width: 111px; text-align: right;">Site path</td>
-        <td style="width: 684px;"><input name="site_path"
- value="{{site_path}}" size="60" type="text"></td>
-      </tr>
-      <tr>
-        <td style="width: 111px; text-align: right;">Page order</td>
-        <td style="width: 684px;"><input name="page_order"
- value="{{page_order}}" type="text">(floating point number)</td>
-      </tr>
-      <tr>
-        <td style="width: 111px; text-align: right;">Valid page</td>
-        <td style="width: 684px;"><input name="valid_page"
- value="{{valid_page}}" type="text">(integer zero or one)</td>
-      </tr>
-    </tbody>
-  </table>
-  <p><input name="continue" value="Save &amp; Continue" type="submit">&nbsp;&nbsp;&nbsp;&nbsp;
-  <input name="save" value="Save" type="submit">&nbsp;&nbsp;&nbsp;&nbsp;
-  <input name="next" value="Save &amp; Edit Next" type="submit"></p>
-</form>
-Image folder is a relative path to the site path. Image folder has no leading / and no trailing /.<br>
-Site path has no trailing /.
-Template:edit_page.html
-</body>
+  <head>
+    <title>Edit page info</title>
+  </head>
+  <body bgcolor="#ffffff">
+    <form action="" method="post">
+      <input name="findme" value="{{findme_encoded}}" type="hidden">
+      <input name="d_state" value="{{d_state}}" type="hidden">
+      <input name="page_pk" value="{{page_pk}}" type="hidden">
+      <input name="continue" value="Save &amp; Continue" type="submit">&nbsp;&nbsp;&nbsp;&nbsp;
+      <input name="save" value="Save" type="submit">&nbsp;&nbsp;&nbsp;&nbsp;
+      <input name="next" value="Save &amp; Edit Next" type="submit">
+      <p></p>
+      <table style="text-align: left; width: 813px; height: 184px;"
+             border="0" cellpadding="3" cellspacing="0">
+        <tbody>
+          <tr>
+            <td style="width: 111px; text-align: right;">page_pk</td>
+            <td style="width: 684px; text-align: left;">{{page_pk}}</td>
+          </tr>
+          <tr>
+            <td style="width: 111px; text-align: right;">Owner</td>
+            <td style="width: 684px;">n/a</td>
+          </tr>
+          <tr>
+            <td style="width: 111px; text-align: right;">Template</td>
+            <td style="width: 684px;"><input name="template" value="{{template}}" size="60" type="text"></td>
+          </tr>
+          <tr>
+            <td style="width: 111px; text-align: right;">Menu</td>
+            <td style="width: 684px;"><input name="menu" value="{{menu}}" size="60" type="text"></td>
+          </tr>
+          <tr>
+            <td style="width: 111px; text-align: right;">Page title</td>
+            <td style="width: 684px;"><input name="page_title" value="{{page_title}}" size="60" type="text"></td>
+          </tr>
+          <tr>
+            <td style="width: 111px; text-align: right;">Body title</td>
+            <td style="width: 684px;"><input name="body_title" value="{{body_title}}" size="60" type="text"></td>
+          </tr>
+          <tr>
+            <td style="width: 111px; text-align: right;">Page name</td>
+            <td style="width: 684px;"><input name="page_name"
+                                             value="{{page_name}}" size="60" type="text"><br>
+              html file name i.e. index.html or external url i.e. search.pl
+            </td>
+          </tr>
+          <tr>
+            <td style="width: 111px; text-align: right;">External URL</td>
+            <td style="width: 684px;"><select name="external_url">
+                <option value="0" {{ext_zero}}>normal page</option>
+                <option value="1" {{ext_one}} >external URL</option>
+	      </select>
+	    </td>
+          </tr>
+          <tr>
+            <td style="width: 111px; text-align: right;">search_string</td>
+            <td style="width: 684px;"><input name="search_string"  value="{{search_string}}" size="60" type="text"></td>
+          </tr>
+          <tr>
+            <td style="width: 111px; text-align: right;">Image folder</td>
+            <td style="width: 684px;"><input name="image_dir"
+                                             value="{{image_dir}}" size="60" type="text"></td>
+          </tr>
+          <tr>
+            <td style="width: 111px; text-align: right;">Site name</td>
+            <td style="width: 684px;"><input name="site_name"
+                                             value="{{site_name}}" size="60" type="text"></td>
+          </tr>
+          <tr>
+            <td style="width: 111px; text-align: right;">Site path</td>
+            <td style="width: 684px;"><input name="site_path"
+                                             value="{{site_path}}" size="60" type="text"></td>
+          </tr>
+          <tr>
+            <td style="width: 111px; text-align: right;">Page order</td>
+            <td style="width: 684px;"><input name="page_order"
+                                             value="{{page_order}}" type="text">(floating point number)</td>
+          </tr>
+          <tr>
+            <td style="width: 111px; text-align: right;">Valid page</td>
+            <td style="width: 684px;"><input name="valid_page"
+                                             value="{{valid_page}}" type="text">(integer zero or one)</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        <input name="continue" value="Save &amp; Continue" type="submit">&nbsp;&nbsp;&nbsp;&nbsp;
+        <input name="save" value="Save" type="submit">&nbsp;&nbsp;&nbsp;&nbsp;
+        <input name="next" value="Save &amp; Edit Next" type="submit"></p>
+    </form>
+    Image folder is a relative path to the site path. Image folder has no leading / and no trailing /.<br>
+    Site path has no trailing /.
+    Template:edit_page.html
+  </body>
 </html>

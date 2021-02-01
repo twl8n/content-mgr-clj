@@ -64,63 +64,55 @@
       (let [curr (first tt)
             test-result (user-input (nth curr 0))]
         ;; (printf "curr=%s\n" curr)
-        (cond test-result (if (some? (nth curr 1))
-                              (traverse-debug (nth curr 1))
-                              nil)
+        (cond (and test-result (some? (nth curr 1))) (traverse-debug (nth curr 1))
               (seq (rest tt)) (recur (rest tt) (inc xx))
               :else nil)))))
 
 
 (defn traverse
   [state]
-  (printf "state=%s\n" state)
+  ;; (printf "state=%s\n" state)
   (if (nil? state)
     nil
     (loop [tt (state @cmgr.state/table)]
       (let [curr (first tt)
+            _ (prn (nth curr 0))
             test-result ((nth curr 0))]
-        (printf "curr=%s\n" curr)
-        (cond test-result (if (some? (nth curr 1))
-                              (traverse (nth curr 1))
-                              nil)
+        ;; (printf "curr=%s test-result: %s\n" curr test-result)
+        (cond (and test-result (some? (nth curr 1))) (traverse (nth curr 1))
               (seq (rest tt)) (recur (rest tt))
               :else nil)))))
 
-
-;; (defn expense-mgr-handler 
-;;   "Expense link manager."
-;;   [request]
-;;   (if (empty? (:params request))
-;;     nil
-;;     (let [temp-params (reduce-kv #(assoc %1 %2 (clojure.string/trim %3))  {} (:params request))
-;;           _ (prn "tp: " temp-params)
-;;           action (get temp-params "action")
-;;           ras  request
-;;           nice-date (check-limit-date temp-params)
-;;           [using-year using-month] (check-uy {:date nice-date
-;;                                               :using-year (or (get temp-params "using_year") "")
-;;                                               :using-month (or (get temp-params "using_month") "")})
-;;           _ (prn "nice-date: " nice-date " limit-date: " (get temp-params "limit_date") " date: " (get temp-params "date") " uy: " using-year " um: " using-month)
-;;           ;; Add :using-year, replace "date" value with a better date value
-;;           working-params (merge temp-params
-;;                                 {:using-year using-year
-;;                                  :using-month using-month
-;;                                  :limit-date nice-date
-;;                                  "date" nice-date})
-;;           ;; rmap is a list of records from the db, will full category data
-;;           rmap (request-action working-params action)]
-;;       (prn "wp: " working-params)
-;;       (reply-action rmap action working-params))))
-
 (defn handler
   [request]
-  (let [temp-params (reduce-kv #(assoc %1 %2 (clojure.string/trim %3))  {} (:params request))
-          d_state (or (get temp-params "d_state" :page_search))]
-      (traverse :page_search)
-      {:status 200
-       :headers {"Content-Type" "text/html"}
-       :body @cmgr.state/html-out}
-      ))
+  (let [temp-params (as-> request yy
+                      (:params yy)
+                      (reduce-kv #(assoc %1 (keyword %2) (clojure.string/trim %3))  {} yy)
+                      (assoc yy :d_state (keyword (:d_state yy)))
+                      )]
+    (map (fn [xx] (cmgr.state/add-state xx)))
+    (cmgr.state/set-params temp-params)
+    (pp/pprint request)
+    (pp/pprint temp-params)
+    (traverse (or (:d_state temp-params) :page_search))
+    {:status 200
+     :headers {"Content-Type" "text/html"}
+     :body @cmgr.state/html-out}
+    ))
+
+(comment
+  (let [request {:params {"d_state" "page_search"
+                          "findme" "foo"
+                          "ginfo" "content_manager,twl"
+                          "page_pk" "2030"
+                          "item" "Edit content"}}
+        tp (as-> request yy
+             (:params yy)
+             (reduce-kv #(assoc %1 (keyword %2) (clojure.string/trim %3))  {} yy)
+            (assoc yy :d_state (keyword (:d_state yy)))
+            )]
+  tp)
+  )
 
 
 (def app

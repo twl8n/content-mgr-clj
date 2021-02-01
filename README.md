@@ -17,3 +17,9 @@ You need a sqlite database named cmgr.db.
 `sqlite3 cmgr.db < schema_sqlite.sql`
 
 
+#### todo
+
+- cmgr.state/table doesn't need to be an atom. That is a left-over from reading the state table from a file.
+  Change it to a normal var.
+  
+  

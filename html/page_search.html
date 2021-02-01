@@ -15,7 +15,7 @@
             <div align="center">
               <form action="" method="post">
                 <input name="findme" value="{{findme_encoded}}" size="50" type="text">
-                <input name="_d_state" value="page_search" type="hidden">
+                <input name="d_state" value="page_search" type="hidden">
                 <input name="ginfo" value="content_manager,twl" type="hidden">
                 <input name="Submit" value="Search Sites" type="submit"><br>
                 <div style="text-align: left;">
@@ -33,7 +33,7 @@
         <tr>
           <td colspan="2" bgcolor="#eeeeee"> 
             <form action="" method="post">
-              <input name="_d_state" value="page_search" type="hidden">
+              <input name="d_state" value="page_search" type="hidden">
               <input name="ginfo" value="content_manager,twl" type="hidden">
               <input name="site_name" value="{{site_name}}" type="hidden">
               <input name="template" value="{{template}}" type="hidden"> Site name:{{site_name}}
@@ -48,7 +48,7 @@
             <nobr>{{menu}} ({{page_order}})</nobr></td>
           <td width="90%">
             <form action="" method="post">
-              <input name="_d_state" value="page_search" type="hidden">
+              <input name="d_state" value="page_search" type="hidden">
               <input name="findme"  value="{{findme_encoded}}" type="hidden">
               <input name="ginfo" value="content_manager,twl" type="hidden">
               <input name="page_pk" value="{{page_pk}}" type="hidden">
@@ -64,6 +64,6 @@
         {{/dcc_site}}
       </tbody>
     </table>
-    Template: {{template}} state: {{_d_state}}
+    Template: {{template}} state: {{d_state}}
   </body>
 </html>
