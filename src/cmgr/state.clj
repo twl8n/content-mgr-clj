@@ -153,15 +153,8 @@
                     ds-opts
                     ["select con_pk from content where page_fk=? 
 			and valid_content<>0 and item_order>? order by item_order asc limit 1" (:page_pk @params)])]))
-        
-;; do_sql_simple("hondavfr","","select * from content,page where page_pk=\$page_pk and page_fk=page_pk and owner='\$owner'");
-;; $site_path = fix_web_path($site_path);
-;; #default, fields to search, found-records field
-;; do_search("valid_content:1 valid_content:0", "valid_content,alt_text,image_name,description", "rank");
-;; # use ["rank >= 1"] if you use do_search().
-;; dcc("dcc_con_pk", "con_pk", ["rank >=1"],["item_order,an"]);
-;; $findme_encoded = www_quote($findme);
-;; render("","Content-type: text/html\n\n","item_search.html", "");
+
+
 (defn item_search []
   (let [result-set (jdbc/execute!
                     ds-opts
@@ -171,8 +164,6 @@
         html-result (clostache/render (slurp "html/item_search.html") ready-data)]
     (reset! html-out html-result)
     ))
-;; db-data {:content (mapv (fn [xx] {:con_pk (key xx)
-;;                                   :data (val xx)}) (group-by :con_pk result-set))}
 
 (defn if-page-gen []
   )
@@ -183,127 +174,93 @@
 ;; default is page_search
 
 (def table
-  (atom
-   {:page_search
-    [[if-edit :edit_page]
-     [if-delete :ask_delete_page]
-     [if-insert :edit_new_page]
-     [#(if-arg :item) :item_search]
-     [if-site_gen :site_gen]
-     [page_search nil]]
+  {:page_search
+   [[if-edit :edit_page]
+    [if-delete :ask_delete_page]
+    [if-insert :edit_new_page]
+    [#(if-arg :item) :item_search]
+    [if-site_gen :site_gen]
+    [page_search nil]]
 
-    :edit_page
-    [[if-save :save_page]
-     [if-continue :save_page_continue]
-     [edit_page nil]]
+   :edit_page
+   [[if-save :save_page]
+    [if-continue :save_page_continue]
+    [edit_page nil]]
 
-    :save_page
-    [[save_page nil]
-     [page_search nil]]
+   :save_page
+   [[save_page nil]
+    [page_search nil]]
 
-    :save_page_continue
-    [[save_page nil]
-     [edit_page nil]]
+   :save_page_continue
+   [[save_page nil]
+    [edit_page nil]]
 
-    :item_search
-    [[if-edit :edit_item]
-     [if-page-gen :page_gen]
-     [if-auto-gen :auto_gen]
-     [item_search nil]]
-    ;; 0	item_search	$edit	  null()	  edit_item
-    ;; 1	item_search	$page_gen page_gen()	  next
-    ;; 2	item_search	$auto_gen auto_gen()	  next
-    ;; 3	item_search	$true	  item_search()	  wait
-    }))
+   :item_search
+   [[if-edit :edit_item]
+    [if-page-gen :page_gen]
+    [if-auto-gen :auto_gen]
+    [item_search nil]]
+   })
 
-(comment table-part-two
-  (atom 
-   {
-    :site_gen
-    [[site_gen nil]
-     [fntrue :page_search]]
+(comment
+  table-part-two
+  {
+   :site_gen
+   [[site_gen nil]
+    [fntrue :page_search]]
 
-    :ask_del_page
-    [[if-confirm :delete_page]
-     [fn-true :page_search]]
-    ;; 0	ask_del_page	$confirm  delete_page()	  page_search
-    ;; 1	ask_del_page	$true	  ask_del_page()  wait
+   :ask_del_page
+   [[if-confirm :delete_page]
+    [fn-true :page_search]]
+   ;; 0	ask_del_page	$confirm  delete_page()	  page_search
+   ;; 1	ask_del_page	$true	  ask_del_page()  wait
 
-    :delete_page
-    [[delete_page :page_search]]
+   :delete_page
+   [[delete_page :page_search]]
 
+   :edit_new_page
+   [[if-save :insert_page]
+    [if-continue :insert_continue]
+    [edit_new_page nil]]
+   
+   :insert_page
+   [[insert_page :page_search]]
+   :insert_continue
+   [[insert_page nil]
+    [clear_cont :edit_page]]
 
-    :edit_new_page
-    [[if-save :insert_page]
-     [if-continue :insert_continue]
-     [edit_new_page nil]]
-    ;; 0	edit_new_page	$save	  insert_page()	  page_search
-    ;; 1	edit_new_page	$continue insert_page()	  next
-    ;; 2	edit_new_page	$continue clear_cont()	  edit_page
-    ;; 3	edit_new_page	$true	  edit_new_page() wait
-    
-    :insert_page
-    [[insert_page :page_search]]
-    :insert_continue
-    [[insert_page nil]
-     [clear_cont :edit_page]]
+   :page_gen
+   [[page_gen :item_search]]
+   :auto_gen
+   [[auto_gen :item_search]]
 
-    :page_gen
-    [[page_gen :item_search]]
-    :auto_gen
-    [[auto_gen :item_search]]
-    :edit_item
-    [[if-save :save_item]
-     [if-continue :save_item_continue]
-     [save_item nil]
-     [next_item nil]
-     [if-con-pk edit_con_pk]
-     [fn-true :item_searchs]]
-    ;; 0	edit_item	$save	  save_item()	  item_search
-    ;; 1	edit_item	$continue save_item()	  next
-    ;; 2	edit_item	$continue edit_item()	  wait
-    ;; 3	edit_item	$next	  save_item()	  next
-    ;; 4	edit_item	$next	  next_item()	  next
-    ;; 5    edit_item       $con_pk	  edit_item()	  wait aka edit_con_pk
-    ;; 6 	edit_item	$true 	  null()	  item_search
+   :edit_item
+   [[if-save :save_item]
+    [if-continue :save_item_continue]
+    [#(if-arg :next) :edit_next]
+    [if-con-pk edit_con_pk]
+    [fn-true :item_search]] ;; Falling through to :item_search is strange.
 
-    :save_item
-    [[save_item :item_search]]
-    :save_item_continue
-    [[save_item nil]
-     [edit_item nil]]
-    :edit_con_pk
-    [[edit_item :item_search]]
-    }))
+;; 0	edit_item	$save	  save_item()	  item_search
+;; 1	edit_item	$continue save_item()	  next
+;; 2	edit_item	$continue edit_item()	  wait
+;; 3	edit_item	$next	  save_item()	  next
+;; 4	edit_item	$next	  next_item()	  next
+;; 5    edit_item       $con_pk	  edit_item()	  wait
+;; 6 	edit_item	$true 	  null()	  item_search
 
+   :edit_next
+   [[save_item nil]
+    [next_item nil]
+    [edit_item nil]] ;; Assumes we have a good con_pk
 
-;; {:state-edge [[test-or-func next-state-edge] ...]}
-;; (def orig-table
-;;   (atom
-;;    {:login
-;;     [[if-logged-in :pages]
-;;      [force-logout nil]
-;;      [draw-login nil]
-;;      [wait nil]]
-    
-;;     :login-input
-;;     [[if-logged-in :dashboard]
-;;      [login :login]]
+   :save_item
+   [[save_item :item_search]]
 
-;;     :pages
-;;     [[if-on-dashboard :dashboard-input]
-;;      [if-want-dashboard :dashboard]
-;;      [wait nil]]
+   :save_item_continue
+   [[save_item nil]
+    [edit_item nil]]
 
-;;     :dashboard
-;;     [[if-moderator :dashboard-moderator]
-;;      [draw-dashboard]
-;;      [wait nil]]
-
-;;     :dashboard-moderator
-;;     [[draw-dashboard-moderator :dashboard-input]]
-
-;;     :dashboard-input
-;;     [[wait nil]]
-;;     }))
-
+   :edit_con_pk
+   [[edit_item nil]]
+   })

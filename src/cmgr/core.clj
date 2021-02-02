@@ -59,7 +59,7 @@
   ;; (printf "state=%s\n" state)
   (if (nil? state)
     nil
-    (loop [tt (state @cmgr.state/table)
+    (loop [tt (state cmgr.state/table)
            xx 1]
       (let [curr (first tt)
             test-result (user-input (nth curr 0))]
@@ -74,7 +74,7 @@
   ;; (printf "state=%s\n" state)
   (if (nil? state)
     nil
-    (loop [tt (state @cmgr.state/table)]
+    (loop [tt (state cmgr.state/table)]
       (let [curr (first tt)
             _ (prn (nth curr 0))
             test-result ((nth curr 0))]
