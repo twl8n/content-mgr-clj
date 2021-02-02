@@ -62,18 +62,23 @@
 (defn wait [] (msg "running wait, returning false") true) ;; return true because wait ends looping over tests
 (defn noop [] (printf "running noop\n"))
 
+;; Due to the nature of HTML submit inputs, we have both a key and a value.
+;; Really, if the key exists we are in the edit state, so lets just check that we have a key and a non-empty string value.
 (defn if-edit []
-  (let [ret (= "Edit page" (:edit @params))]
+  (let [tval (:edit @params)
+        ret (and (seq tval) tval)]
     (swap! params #(dissoc % :edit))
-    ret))
+    (boolean ret)))
 
 (defn if-delete [] )
 (defn if-insert [] )
 
-(defn if-item []
-  (let [ret (= "Edit content" (:item @params))]
-    (swap! params #(dissoc % :item))
-  ret))
+;; (if-arg :item)
+(defn if-arg [tkey]
+  (let [tval (tkey @params)
+        ret (and (seq tval) tval)]
+    (swap! params #(dissoc % tkey))
+    (boolean ret)))
 
 (defn if-site_gen [] )
 
@@ -133,17 +138,47 @@
                                 {:page_pk (:page_pk @params)})]
     true))
 
-;; [ext_one ext_zero] (if (= 1 (:external_url @params)) ["selected" ""] ["" "selected"])
-;;         ready-data (merge @params
-;;                           {:template "edit_page.html"
-;;                            :d_state "edit_page"
-;;                            :ext_one ext_one
-;;                            :ext_zero ext_zero}
-;;                           )
-;;         html-result (clostache/render (slurp "html/edit_page.html") ready-data)]
-;;     (reset! html-out html-result)))
 
-(defn next_page [] )
+;; do_sql_simple("hondavfr", "", "select con_pk from content where page_fk=\$page_pk and valid_content<>0 and item_order>\$item_order order by item_order asc limit 1");
+;; if ($con_pk)
+;; {
+;;     $edit = 1;
+;; }
+;; else
+;; {
+;;     $done = 1;
+;; }
+(defn next_content_page [] 
+  (let [result-set (jdbc/execute-one!
+                    ds-opts
+                    ["select con_pk from content where page_fk=? 
+			and valid_content<>0 and item_order>? order by item_order asc limit 1" (:page_pk @params)])]))
+        
+;; do_sql_simple("hondavfr","","select * from content,page where page_pk=\$page_pk and page_fk=page_pk and owner='\$owner'");
+;; $site_path = fix_web_path($site_path);
+;; #default, fields to search, found-records field
+;; do_search("valid_content:1 valid_content:0", "valid_content,alt_text,image_name,description", "rank");
+;; # use ["rank >= 1"] if you use do_search().
+;; dcc("dcc_con_pk", "con_pk", ["rank >=1"],["item_order,an"]);
+;; $findme_encoded = www_quote($findme);
+;; render("","Content-type: text/html\n\n","item_search.html", "");
+(defn item_search []
+  (let [result-set (jdbc/execute!
+                    ds-opts
+                    ["select * from content where page_fk=? order by item_order"
+                     (:page_pk @params)])
+        ready-data (merge @params {:content result-set})
+        html-result (clostache/render (slurp "html/item_search.html") ready-data)]
+    (reset! html-out html-result)
+    ))
+;; db-data {:content (mapv (fn [xx] {:con_pk (key xx)
+;;                                   :data (val xx)}) (group-by :con_pk result-set))}
+
+(defn if-page-gen []
+  )
+
+(defn if-auto-gen []
+  )
 
 ;; default is page_search
 
@@ -153,20 +188,14 @@
     [[if-edit :edit_page]
      [if-delete :ask_delete_page]
      [if-insert :edit_new_page]
-     [if-item :item_search]
+     [#(if-arg :item) :item_search]
      [if-site_gen :site_gen]
      [page_search nil]]
 
     :edit_page
     [[if-save :save_page]
      [if-continue :save_page_continue]
-     [if-next :save_next]
      [edit_page nil]]
-    ;; 0	edit_page	$save	  save_page()	  page_search
-    ;; 1	edit_page	$continue save_page()	  next
-    ;; 2	edit_page	$next	  save_page()	  next
-    ;; 3	edit_page	$next	  next_page()	  next
-    ;; 4	edit_page	$true	  edit_page()	  wait
 
     :save_page
     [[save_page nil]
@@ -176,18 +205,16 @@
     [[save_page nil]
      [edit_page nil]]
 
-    :save_next
-    [[save_page nil]
-     [next_page nil]
-     [edit_page nil]]
-
+    :item_search
+    [[if-edit :edit_item]
+     [if-page-gen :page_gen]
+     [if-auto-gen :auto_gen]
+     [item_search nil]]
+    ;; 0	item_search	$edit	  null()	  edit_item
+    ;; 1	item_search	$page_gen page_gen()	  next
+    ;; 2	item_search	$auto_gen auto_gen()	  next
+    ;; 3	item_search	$true	  item_search()	  wait
     }))
-    ;; 0	page_search	$edit	  null()	  edit_page
-    ;; 1	page_search	$delete	  null()	  ask_delete_page
-    ;; 2	page_search	$insert	  null()          edit_new_page
-    ;; 3	page_search	$item	  null()	  item_search
-    ;; 4	page_search	$site_gen site_gen()	  next
-    ;; 5	page_search	$true	  page_search()	  wait
 
 (comment table-part-two
   (atom 
@@ -221,20 +248,10 @@
     [[insert_page nil]
      [clear_cont :edit_page]]
 
-    :item_search
-    [[if-edit :edit_item]
-     [if-page-gen :page_gen]
-     [if-auto-gen :auto_gen]]
-    ;; 0	item_search	$edit	  null()	  edit_item
-    ;; 1	item_search	$page_gen page_gen()	  next
-    ;; 2	item_search	$auto_gen auto_gen()	  next
-    ;; 3	item_search	$true	  item_search()	  wait
-
     :page_gen
     [[page_gen :item_search]]
     :auto_gen
     [[auto_gen :item_search]]
-
     :edit_item
     [[if-save :save_item]
      [if-continue :save_item_continue]
