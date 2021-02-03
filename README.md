@@ -19,7 +19,8 @@ You need a sqlite database named cmgr.db.
 
 #### todo
 
-- cmgr.state/table doesn't need to be an atom. That is a left-over from reading the state table from a file.
+x cmgr.state/table doesn't need to be an atom. That is a left-over from reading the state table from a file.
   Change it to a normal var.
-  
+
+- Most (all?) pages with save and save & continue also need "cancel".
   

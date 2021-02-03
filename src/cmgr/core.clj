@@ -88,12 +88,14 @@
   (let [temp-params (as-> request yy
                       (:params yy)
                       (reduce-kv #(assoc %1 (keyword %2) (clojure.string/trim %3))  {} yy)
-                      (assoc yy :d_state (keyword (:d_state yy)))
+                      (assoc yy
+                             :d_state (keyword (:d_state yy)))
                       )]
-    (map (fn [xx] (cmgr.state/add-state xx)))
+    ;; An unfinished thought.
+    ;; (map (fn [xx] (cmgr.state/add-state xx)))
     (cmgr.state/set-params temp-params)
-    (pp/pprint request)
-    (pp/pprint temp-params)
+    ;; (pp/pprint request)
+    (pp/pprint (str "@params: " @cmgr.state/params))
     (traverse (or (:d_state temp-params) :page_search))
     {:status 200
      :headers {"Content-Type" "text/html"}

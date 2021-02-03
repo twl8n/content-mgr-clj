@@ -160,7 +160,7 @@
                     ds-opts
                     ["select * from content where page_fk=? order by item_order"
                      (:page_pk @params)])
-        ready-data (merge @params {:content result-set})
+        ready-data (merge @params {:content result-set :d_state "item_search"})
         html-result (clostache/render (slurp "html/item_search.html") ready-data)]
     (reset! html-out html-result)
     ))
@@ -171,8 +171,99 @@
 (defn if-auto-gen []
   )
 
-;; default is page_search
+(defn save_item []
+    ;; do_sql_simple("hondavfr", "", "update content set description='\$description', alt_text='\$alt_text',
+    ;; item_order='\$item_order', valid_content='\$valid_content' where con_pk=\$con_pk and page_fk in (select
+    ;; page_pk from page where owner='\$owner')");
+  )
 
+(defn next_item []
+    ;; $script="edit_next.deft";
+    ;; $old_con_pk = $con_pk;
+    ;; $con_pk = 0;
+    ;; do_sql_simple("hondavfr", "", "select con_pk from content where page_fk=\$page_pk and valid_content<>0 and item_order>\$item_order order by item_order asc limit 1");
+
+  )
+
+(defn edit_item []
+  ;; From cmlib.deft which is the newest file.
+  ;; $description = undef;
+  ;; $alt_text = undef;
+  ;; $item_order = undef;
+  ;; $valid_content = undef;
+  ;; do_sql_simple("hondavfr", "", "select page_fk,
+  ;;     	image_name, image_width, image_height,
+  ;;     	description, alt_text, valid_content,
+  ;;     	item_order, s_name, s_width, s_height,
+  ;;     	template, menu, page_title, body_title,
+  ;;     	page_name, search_string, site_name, site_path,
+  ;;     	page_order, valid_page, image_dir, external_url
+  ;;     	from content,page where con_pk=\$con_pk and page_fk=page_pk and owner='\$owner'");
+  ;; $drows = p_count($description); # number of <p> or \n in $description
+  ;; $drows += (length($description)/60);
+  ;; $drows += ($drows*0.3);
+  ;; $drows = sprintf("%d", $drows);
+  ;; $page_pk = $page_fk;
+  ;; $description =~ s/<p>/\n\n/sig;
+  ;; $description =~ s/<br><br>/\n\n/sig;
+  ;; $findme_encoded = www_quote($findme);
+  ;; $insert = 0; 
+  ;; # named_config() is in sessionlib.pm and reads site_path from app_config.
+  ;; $site_path = sprintf("%s/%s", named_config(site_path), $site_path);
+  ;; $web_path = $site_path;
+  ;; $web_path = fix_web_path($web_path);
+  ;; $file_name = "-";
+  ;; $template = "edit_item.html";
+  ;; # dump_stream("edit_item");
+  ;; render("file_name", "template", "Content-type: text/html\n\n",);
+  (let [result-set (jdbc/execute-one!
+                    ds-opts
+                    ["select page_fk,
+		      	image_name, image_width, image_height,
+		      	description, alt_text, valid_content,
+		      	item_order, s_name, s_width, s_height,
+		      	template, menu, page_title, body_title,
+		      	page_name, search_string, site_name, site_path,
+		      	page_order, valid_page, image_dir, external_url
+		      	from content,page where con_pk=? and page_fk=page_pk"
+                     (:con_pk @params)])
+        ready-data (merge @params
+                          result-set
+                          {:drows 20
+                           :page_pk (:page_fk result-set)
+                           :d_state "edit_item"})
+        html-result (clostache/render (slurp "html/edit_item.html") ready-data)]
+    (reset! html-out html-result)
+    ;; (println "ready-data: " ready-data)
+    ;; (println "result-set: " result-set)
+    ;; (println "con_pk: " (:con_pk @params))
+    ))
+
+
+(comment
+(let [result-set (jdbc/execute-one!
+                    ds-opts
+                    ["select page_fk,
+		      	image_name, image_width, image_height,
+		      	description, alt_text, valid_content,
+		      	item_order, s_name, s_width, s_height,
+		      	template, menu, page_title, body_title,
+		      	page_name, search_string, site_name, site_path,
+		      	page_order, valid_page, image_dir, external_url
+		      	from content,page where con_pk=? and page_fk=page_pk"
+                     2032])
+        ready-data (merge @params
+                          result-set
+                          {:drows 20
+                           :page_pk (:page_fk result-set)
+                           :d_state "edit_item"})
+        html-result (clostache/render (slurp "html/edit_item.html") ready-data)]
+    (reset! html-out html-result)
+    (prn "ready-data: " ready-data)
+    )
+  )
+
+;; default is page_search
 (def table
   {:page_search
    [[if-edit :edit_page]
@@ -200,6 +291,32 @@
     [if-page-gen :page_gen]
     [if-auto-gen :auto_gen]
     [item_search nil]]
+
+   :edit_item
+   [[if-save :save_item]
+    [if-continue :save_item_continue]
+    [#(if-arg :next) :edit_next]
+    [edit_item nil]]
+
+   ;; 0	edit_item	$save	  save_item()	  item_search
+   ;; 1	edit_item	$continue save_item()	  next
+   ;; 2	edit_item	$continue edit_item()	  wait
+   ;; 3	edit_item	$next	  save_item()	  next
+   ;; 4	edit_item	$next	  next_item()	  next
+   ;; 5    edit_item       $con_pk	  edit_item()	  wait
+   ;; 6 	edit_item	$true 	  null()	  item_search
+
+   :edit_next
+   [[save_item nil]
+    [next_item nil]
+    [edit_item nil]] ;; Assumes we have a good con_pk
+
+   :save_item
+   [[save_item :item_search]]
+
+   :save_item_continue
+   [[save_item nil]
+    [edit_item nil]]
    })
 
 (comment
@@ -234,33 +351,4 @@
    :auto_gen
    [[auto_gen :item_search]]
 
-   :edit_item
-   [[if-save :save_item]
-    [if-continue :save_item_continue]
-    [#(if-arg :next) :edit_next]
-    [if-con-pk edit_con_pk]
-    [fn-true :item_search]] ;; Falling through to :item_search is strange.
-
-;; 0	edit_item	$save	  save_item()	  item_search
-;; 1	edit_item	$continue save_item()	  next
-;; 2	edit_item	$continue edit_item()	  wait
-;; 3	edit_item	$next	  save_item()	  next
-;; 4	edit_item	$next	  next_item()	  next
-;; 5    edit_item       $con_pk	  edit_item()	  wait
-;; 6 	edit_item	$true 	  null()	  item_search
-
-   :edit_next
-   [[save_item nil]
-    [next_item nil]
-    [edit_item nil]] ;; Assumes we have a good con_pk
-
-   :save_item
-   [[save_item :item_search]]
-
-   :save_item_continue
-   [[save_item nil]
-    [edit_item nil]]
-
-   :edit_con_pk
-   [[edit_item nil]]
    })
