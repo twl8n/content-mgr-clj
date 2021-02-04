@@ -96,6 +96,7 @@
     (cmgr.state/set-params temp-params)
     ;; (pp/pprint request)
     (pp/pprint (str "@params: " @cmgr.state/params))
+    (println ":page_fk " (:page_fk @cmgr.state/params))
     (traverse (or (:d_state temp-params) :page_search))
     {:status 200
      :headers {"Content-Type" "text/html"}

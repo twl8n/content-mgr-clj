@@ -1,3 +1,15 @@
+  ;; convert <br><br> in content.description to \n\n\n\n
+  (let [descs (jdbc/execute! ds-opts ["select con_pk,description from content where description is not null"])
+        _ (prn (count descs))
+        good-descs (mapv #(assoc % :description (str/replace (:description %) #"<br><br>" "\n\n\n\n")) descs)]
+    (doseq [uprec good-descs]
+      (println "updating: " (:con_pk uprec))
+      (sql/update! ds-opts :content uprec {:con_pk (:con_pk uprec)})
+      )
+   )
+
+
+
 (comment
   (def rsa (jdbc/execute-one! ds-opts ["select * from page where page_pk=?" 4237]))
   ;;   :page_pk = 4237
