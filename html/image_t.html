@@ -1,8 +1,9 @@
+<!doctype html>
 <html>
   <head>
-    <title>$page_title</title>
+    <title>{{page_title}}</title>
     <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-    <link rel="stylesheet" href="cm_std.css" type="text/css">
+    <link rel="stylesheet" href="../cm_std.css" type="text/css">
     <!-- image_t.html -->
   </head>
 
@@ -49,22 +50,32 @@
     
     <div id="content">
       <p>
-	<b>$body_title</b> 
+	<b>{{body_title}}</b> 
       </p>
       <p>
-	<nobr>{c $dcc_prev_link start &gt; -1 stop a&gt; +2}<a href="$prev">Previous</a>
-	  Previous {c $dcc_prev_text start Prev -2 stop ous -1} | <a href="$page_name">Small images</a> |
-	  {c $dcc_next_link start \| -1 stop a&gt; +2 } <a href="$next">Next</a>
-	  {c $dcc_next_text start Next +1 stop Next +2 } Next</nobr>
+	<nobr>
+          {{#prev}}<a href="{{prev-name}}">Previous image</a>{{/prev}}{{^prev}}(no previous image){{/prev}} |
+          <a href="{{page_name}}">Back</a> |
+          {{#next}}<a href="{{next-name}}">Next image</a>{{/next}}{{^next}}(no next image){{/next}}
+
+          <!--
+          {c $dcc_prev_link start &gt; -1 stop a&gt; +2}
+          <a href="{{prev}}">Previous</a>
+	  Previous {c $dcc_prev_text start Prev -2 stop ous -1} | <a href="{{page_name}}">Small images</a> |
+	  {c $dcc_next_link start \| -1 stop a&gt; +2 } <a href="{{next}}">Next</a>
+	  {c $dcc_next_text start Next +1 stop Next +2 } Next
+          -->
+
+        </nobr>
       </p>
       <p>
-        $description
+        {{description}}
       </p>
       <p>
-	<img src="$image_dir/$image_name" border="0" alt="$alt_text" vspace="0" hspace="10" class="lrg_img">
+	<img src="images/{{image_dir}}/{{image_name}}" border="0" alt="{{alt_text}}" vspace="0" hspace="10" class="lrg_img">
       </p>
       <p>
-	$menu_text
+	{{&menu_text}}
       </p>
       <hr>
     </div> <!-- end content -->

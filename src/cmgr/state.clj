@@ -257,12 +257,80 @@
   (gen_single_page 543 (menu_gen "hondavfr"))
   )
 
+;; Are these item pages or image pages? Ideally, we'd be consistent about the name.
+(defn gen_image_pages [ready-data]
+  ;; # max
+  ;; do_sql_simple("hondavfr", "", "select count(*) as max_ordinal from content where valid_content=1 and page_fk=\$page_pk");
+  ;; # prev
+  ;; do_sql_simple("hondavfr", "", "select count(*) as prev from content where valid_content=1 and page_fk=\$page_pk and item_order<\$item_order");
+  ;; $prev_flag = 1;
+  ;; if (! $prev) {
+  ;;     $prev_flag = 0;
+  ;;     $prev = 0; } # weird things happen if this is changed to 1
+  ;; # get the ordinal of each record, ones based ordinals (not zero based)
+  ;; $ordinal = $prev + 1;
+  ;; # next
+  ;; $next = $prev + 2;
+  ;; $next_flag = 0;
+  ;; if ($next <= $max_ordinal ) { next_flag = 1;  }
+  ;; $prev = "$page_stem\_$prev\_i.html";
+  ;; $next = "$page_stem\_$next\_i.html";
+  ;; $output_file = "$site_path/$page_stem\_$ordinal\_i.html";
+  ;; # If the flag is true use the link, else use the text.
+  ;; # con_pk should be unique to each record we will output.
+  ;; dcc("dcc_prev_link", "con_pk", ["prev_flag == 1"], []);
+  ;; dcc("dcc_prev_text", "con_pk", ["prev_flag == 0"], []);
+  ;; dcc("dcc_next_link", "con_pk", ["next_flag == 1"], []);
+  ;; dcc("dcc_next_text", "con_pk", ["next_flag == 0"], []);
+  ;; render("output_file", "./image_t.html");
+  (doseq [page-data (:content-ordinal ready-data)]
+    (let [page_pk (:page_pk ready-data)
+          item_order (:item_order page-data)
+          page_stem (:page_stem ready-data)
+          site_path (:site_path ready-data)
+          max_ordinal (:max_ordinal (jdbc/execute-one!
+                                     ds-opts
+                                     ["select count(*) as max_ordinal from content where valid_content=1 and page_fk=?" page_pk]))
+          prev (:prev (jdbc/execute-one!
+                       ds-opts
+                       ["select count(*) as prev from content 
+			where valid_content=1 and page_fk=? and item_order<?" page_pk item_order]))
+          prev_flag (< 0 prev)
+          ordinal (+ 1 prev)
+          next (+ 2 prev)
+          next_flag (<= next max_ordinal)
+          prev-name (format "%s_%s_i.html" page_stem prev)
+          next-name (format "%s_%s_i.html" page_stem next)
+          ;; full-site-path (format "%s/%s" (:export-path @config) (:site_path page-rec))       
+          full_page_name (format "%s/%s/%s_%s_i.html" (:export-path @config) site_path page_stem ordinal)
+          _ (prn "page_fk: " page_pk "ordinal: " ordinal "item_order: " (:item_order page-data) "con_pk: " (:con_pk page-data))
+          html-fragment (clostache/render (slurp "html/image_t.html")
+                                          (merge page-data
+                                                 ready-data
+                                                 {:next next_flag
+                                                  :next-name next-name
+                                                  :prev prev_flag
+                                                  :prev-name prev-name}))]
+      ;; hondavfr/index_1_i.html (No such file or directory)
+      ;; (prn full_page_name)
+      (spit full_page_name html-fragment)
+      )))
+
+
+;; A "site" is all the pages with the same site_name.
+(comment
+  (cmgr.core/init-config)
+  (do (reset! params {:site_name "hondavfr"})
+      (site_gen))
+  )
+
+
 ;; file:///Users/twl/Sites/content-manager-pages/hondavfr/givi_cases_vfr/givi_cases_vfr_16_s.jpg
 (defn gen_single_page [page_pk menu_text]
   (let [page-rec (jdbc/execute-one!
                   ds-opts
                   ["select
-			template, menu, page_title, body_title, page_name,
+			page_pk, template, menu, page_title, body_title, page_name,
 			search_string, image_dir, site_name, site_path,
 			page_order, valid_page,external_url
 			from page where page_pk=?" page_pk])
@@ -273,9 +341,9 @@
 			image_name,image_width,item_order
 			from content where page_fk=? and valid_content=1 order by item_order, con_pk" page_pk])
         ;; For :flag I'm pretty sure we want the first record which is ordinal (index) zero.
-        content-ordinal (map-indexed #(assoc %2 :ordinal  %1
-                                             :flag (= %1 0)
-                                             :pf_name (format "%s_%s_i.html" page_stem %1)) content-recs)
+        content-ordinal (map-indexed #(assoc %2 :ordinal  (inc %1)
+                                             :flag (= (inc %1) 1)
+                                             :pf_name (format "%s_%s_i.html" page_stem (inc %1))) content-recs)
         ;; dcc("dcc_start_outer", "page_fk", ["item_ordinal < 2"], []);
         ;; dcc_start_outer (filter :flag content-ordinal)
         ;; dcc("dcc_start_inner", "con_pk", ["item_ordinal < 2"], ["item_ordinal,an"]);
@@ -286,22 +354,19 @@
         full-site-path (format "%s/%s" (:export-path @config) (:site_path page-rec))
         full_page_name (format "%s/%s" full-site-path (:page_name page-rec))
         ;;     $path_exists = test_path($site_path);
+        ready-data (assoc page-rec
+                          :page_stem page_stem
+                          :menu_text menu_text
+                          :full_page_name full_page_name
+                          :content-ordinal content-ordinal
+                          :start_inner start_inner
+                          :remainder remainder)
         html-fragment (clostache/render (slurp "html/main_t.html")
-                                        (assoc page-rec
-                                               :menu_text menu_text
-                                               :full_page_name full_page_name
-                                               :start_inner start_inner
-                                               :remainder remainder))]
+                                        ready-data)]
     (spit full_page_name html-fragment)
-    ;; (gen_image_pages page_pk menu_text)
+    (gen_image_pages ready-data)
     ))
 
-;; A "site" is all the pages with the same site_name.
-(comment
-  (cmgr.core/init-config)
-  (reset! params {:site_name "hondavfr"})
-  (site_gen)
-  )
 (defn site_gen []
   (let [site_name (:site_name @params)
         result-set (jdbc/execute!
