@@ -1,110 +1,85 @@
+<!doctype html>
 <html>
   <head>
     <title>{{page_title}}</title>
     <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-    <link rel="stylesheet" href="cm_std.css" type="text/css">
-    
-    <script type="text/javascript">
-      <!--
-	  google_ad_client = "pub-2716280660683419";
-	  google_ad_width = 120;
-	  google_ad_height = 240;
-	  google_ad_format = "120x240_as";
-	  google_ad_type = "text_image";
-	  google_ad_channel = "";
-	  //-->
-    </script>
-    <! -- main_t.html -->
-       </head>
-  
+    <link rel="stylesheet" href="../cm_std.css" type="text/css">
+  </head>
   <body bgcolor="#FFFFFF" text="#000000">
     <div id="nav">
       Our web sites<br>
-      <a href="http://infogizmo.com/"><nobr>InfoGizmo</nobr></a> 
+      <a href="http://infogizmo.com/">InfoGizmo</a> 
       <br>
-      <a href="http://defindit.com/"><nobr>DeFindIt Software</nobr></a>
+      <a href="http://defindit.com/">DeFindIt Software</a>
       <br>
-      <a href="http://laudeman.com/sorghum/"><nobr>Sorghum Syrup</nobr></a>
+      <a href="http://laudeman.com/sorghum/">Sorghum Syrup</a>
       <br>
-      <a href="http://laudeman.com/r1100rt/"><nobr>BMW R1100RT PIAA</nobr></a>
+      <a href="http://laudeman.com/r1100rt/">BMW R1100RT PIAA</a>
       <br>
-      <a href="http://laudeman.com/bmw_r850r/"><nobr>BMW R850R</nobr></a>
+      <a href="http://laudeman.com/bmw_r850r/">BMW R850R</a>
       <br>
-      <a href="http://laudeman.com/hondavfr/"><nobr>Honda VFR750F</nobr></a>
+      <a href="http://laudeman.com/hondavfr/">Honda VFR750F</a>
       <br>
-      <a href="http://laudeman.com/hondavlx/"><nobr>Honda Shadow VLX</nobr></a>
+      <a href="http://laudeman.com/hondavlx/">Honda Shadow VLX</a>
       <br>
-      <a href="http://laudeman.com/bug.html"><nobr>VW Bug</nobr></a>
+      <a href="http://laudeman.com/bug.html">VW Bug</a>
       <br>
-      <a href="http://laudeman.com/cabrio/"><nobr>VW Cabriolet</nobr></a>
+      <a href="http://laudeman.com/cabrio/">VW Cabriolet</a>
       <br>
-      <a href="http://laudeman.com/volkswagen/"><nobr>Golf, Jetta, NB</nobr></a>
+      <a href="http://laudeman.com/volkswagen/">Golf, Jetta, NB</a>
       <br>
-      <a href="http://laudeman.com/trucks/"><nobr>Wrangler and F-250</nobr></a>
+      <a href="http://laudeman.com/trucks/">Wrangler and F-250</a>
       <br>
-      <a href="http://laudeman.com/klr650/"><nobr>Kawasaki KLR650</nobr></a>
+      <a href="http://laudeman.com/klr650/">Kawasaki KLR650</a>
       <br>
-      <a href="http://laudeman.com/bmw2002.html"><nobr>BMW 2002</nobr></a>
+      <a href="http://laudeman.com/bmw2002.html">BMW 2002</a>
       <br>
-      <a href="http://laudeman.com/downhome/"><nobr>Abby's Down Home</nobr></a>
+      <a href="http://laudeman.com/downhome/">Abby's Down Home</a>
       <br>
-      <a href="http://laudeman.com/"><nobr>laudeman.com</nobr></a>
+      <a href="http://laudeman.com/">laudeman.com</a>
       <br>
-      <a href="http://laudeman.com/tom_mail.html"><nobr>Contact Tom</nobr></a>
-      <br>
+      <a href="http://laudeman.com/tom_mail.html">Contact Tom</a>
+      <hr>
       Click images to enlarge.
-
-      <hr>
-      <div id="gad" align="left">
-	<script type="text/javascript"
-		src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
-	</script>
-      </div>
     </div>
-
     <!-- end nav -->
-
     <div id="content">
-      <p>
-        <div align="center">{{body_title}}</div>
-      </p>
-      <p>	  
-	{{menu_text}}
-      </p>
+      <div align="center">{{body_title}}</div>
+      {{&menu_text}}
       <hr>
-      {{#start_outer}}
       <div class="entry">
-	<!-- {c $dcc_start_outer start &lt;div -2 stop &lt;/div&gt; +2 } -->
+	<!-- {c $start_outer start &lt;div -2 stop &lt;/div&gt; +2 } -->
         {{#start_inner}}
         <a href="{{pf_name}}">
-          <img src="{{image_dir}}/{{s_name}}"
-               width="{{s_width}}"
-               height="{{s_height}}"
-               border="0"
-               alt="{{alt_text}}"
-               vspace="0"
-               hspace="10"
-               align="right">
-        </a>
-        {{description}}
-	<!-- {c $dcc_start_inner start &lt;a -2 stop &lt;/div +1} -->
-	<br clear="all">
-        {{/start_inner}
-      </div>
-      {{/start_outer}}
-      
-      {{remainder}}
-      <div class="entry">
-        <!-- {c $dcc_remainder start &lt;div -2 stop &lt;/div&gt; +2 } -->
-        <a href="{{pf_name}}">
-          <img src="{{image_dir}}/{{s_name}}"
+          <img src="images/{{image_dir}}/{{s_name}}"
                width="{{s_width}}"
                height="{{s_height}}"
                border="0"
                align="right"
                alt="{{alt_text}}"
                vspace="0"
-               hspace="10"></a>
+               hspace="10">
+        </a>
+        {{description}}
+	<!-- {c $start_inner start &lt;a -2 stop &lt;/div +1} -->
+	<br clear="all">
+        {{/start_inner}}
+      </div>
+      
+      {{#remainder}}
+      <div class="entry">
+        <!-- {c $remainder start &lt;div -2 stop &lt;/div&gt; +2 } -->
+        <!-- ordinal {{ordinal}} item_order {{item_order}} -->
+        <a href="{{pf_name}}">
+          <img src="images/{{image_dir}}/{{s_name}}"
+               width="{{s_width}}"
+               height="{{s_height}}"
+               border="0"
+               align="right"
+               alt="{{alt_text}}"
+               vspace="0"
+               hspace="10">
+        </a>
         {{description}}
 	<br clear="all">
       </div>

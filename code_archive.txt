@@ -1,3 +1,79 @@
+
+
+(comment
+  (jdbc/execute! ds-opts ["select description from content limit 1"])
+  (jdbc/execute! ds-opts ["select con_pk,page_fk from content where valid_content=1 limit 5"])
+  (jdbc/execute! ds-opts ["select count(*) from content where page_fk is null"])
+  )
+
+(comment
+  ;; remove leading "images/" from page.image_dir
+  (let [result-set (jdbc/execute!
+                    ds-opts
+                    ;; ["update page set image_dir='images/home' where page_pk=4280"]
+                    ;; ["select * from page where page_pk=539"]
+                    ["select * from page"]
+                    )
+        update-set (mapv #(assoc % :image_dir (str/replace (:image_dir %) #"images/" "")) result-set)]
+    (doseq [uprec update-set]
+      (println "updating: " (:page_pk uprec))
+      (sql/update! ds-opts :page uprec {:page_pk (:page_pk uprec)}))
+    )
+  ;; update page set image_dir="images/home" where page_pk=4280;
+
+  (let [result-set (jdbc/execute-one!
+                    ds-opts
+                    ["select page_fk,
+		      	image_name, image_width, image_height,
+		      	description, alt_text, valid_content,
+		      	item_order, s_name, s_width, s_height,
+		      	template, menu, page_title, body_title,
+		      	page_name, search_string, site_name, site_path,
+		      	page_order, valid_page, image_dir, external_url
+		      	from content,page where con_pk=? and page_fk=page_pk"
+                     2032])
+        ready-data (merge @params
+                          result-set
+                          {:drows 20
+                           :page_pk (:page_fk result-set)
+                           :d_state "edit_item"})
+        html-result (clostache/render (slurp "html/edit_item.html") ready-data)]
+    (reset! html-out html-result)
+    (prn "ready-data: " ready-data)
+    )
+  )
+
+(comment
+  ;; con_pk 2032 page_pk 2030
+  (jdbc/execute!
+   ds-opts
+   ["select content.*, page.image_dir, page.site_path from content,page where page_fk=? and page_pk=page_fk order by item_order"
+    2030])
+  (jdbc/execute-one! ds-opts ["select con_pk,image_dir,site_path from content,page where page_pk=page_fk and image_dir is not null"])
+  (jdbc/execute-one! ds-opts ["select con_pk,image_dir,site_path from content,page where page_pk=page_fk and con_pk=2032"])
+  )
+
+(comment 
+  ;; returns a string, not a number.
+  (format "%1.0f" (/ (count ordinal-set) desired-columns))
+  (quot (+ 14 5) 5.0)
+  (quot 14 5.0)
+  ;; seems to reliably return the number we expect
+  (quot (+ 0.5 (/ 13 5.0)) 1)
+  (rem (+ 14 0) 5.0)
+  (sort-by :ordinal foo)
+  (map (fn [xx] [(:page_break xx) (mod (:ordinal xx) 3)]) foo)
+  (sort-by :ordinal [{:foo 1 :ordinal 2} {:foo 3 :ordinal 0}])
+  
+  (map (fn [xx] (mod (inc xx) 3)) (range 15))
+  )
+
+(def old-app
+  (wrap-file (wrap-multipart-params (wrap-params handler)) "/Users/twl/Sites/content-images"))
+
+
+
+
   ;; convert <br><br> in content.description to \n\n\n\n
   (let [descs (jdbc/execute! ds-opts ["select con_pk,description from content where description is not null"])
         _ (prn (count descs))

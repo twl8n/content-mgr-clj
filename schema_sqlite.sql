@@ -43,3 +43,5 @@ create table "page"
 	meta_key text, -- keywords meta tag
 	meta_desc -- description meta tag
 );
+
+

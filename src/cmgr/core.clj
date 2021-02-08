@@ -1,12 +1,16 @@
 (ns cmgr.core
-  (:require [cmgr.state :refer :all]
+  (:require [cmgr.state]
             [clojure.string :as str]
             [clojure.pprint :as pp]
             [ring.adapter.jetty :as ringa]
             [ring.util.response :as ringu]
+            [ring.middleware.file :refer [wrap-file]]
             [ring.middleware.params :refer [wrap-params]]
             [ring.middleware.multipart-params :refer [wrap-multipart-params]])
   (:gen-class))
+
+;; Used here to serve static content, and used in cmgr.state to know where to export the generated web pages.
+(def export-path (str(System/getenv "HOME") "/Sites/content-manager-pages"))
 
 ;; Workaround for the namespace changing to "user" after compile and before -main is invoked
 (def true-ns (ns-name *ns*))
@@ -38,8 +42,8 @@
 
 (defn user-input [fn-name]
   (printf "user-input fn-name: %s\n" fn-name)
-  (cond (= fn-name (resolve 'fntrue)) (do (printf "Have fntrue, returning true.\n") (fntrue))
-        (= fn-name (resolve 'fnfalse)) (do (printf "Have fnfalse, returning false.\n" (fnfalse)))
+  (cond (= fn-name (resolve 'fntrue)) (do (printf "Have fntrue, returning true.\n") (cmgr.state/fntrue))
+        (= fn-name (resolve 'fnfalse)) (do (printf "Have fnfalse, returning false.\n" (cmgr.state/fnfalse)))
         (nil? (re-find #"\$if_" (str fn-name))) (fn-name)
         :else
         (do
@@ -83,8 +87,12 @@
               (seq (rest tt)) (recur (rest tt))
               :else nil)))))
 
+(defn init-config []
+  (cmgr.state/set-config {:export-path export-path}))
+
 (defn handler
   [request]
+  (cmgr.state/set-config {:export-path export-path})
   (let [temp-params (as-> request yy
                       (:params yy)
                       (reduce-kv #(assoc %1 (keyword %2) (clojure.string/trim %3))  {} yy)
@@ -119,7 +127,22 @@
 
 
 (def app
-  (wrap-multipart-params (wrap-params handler)))
+  (-> handler
+      (wrap-file export-path {:allow-symlinks? true})
+      (wrap-multipart-params)
+      (wrap-params)))
+
+;; http://localhost:8080/downhome/home/flowers_07_s.jpg
+;; /Users/twl/Sites/content-images/downhome/home/flowers_07_s.jpg
+
+;; Removed the intermediate images dir from source image directory path
+;; new: /Users/twl/Sites/content-images/downhome/home/flowers_07_s.jpg
+
+;; old edit_item.html http://localhost:8080/images/home/flowers_07_s.jpg
+;; old item_search.html: http://localhost:8080/downhome/images/home/flowers_07_s.jpg
+;; old: /Users/twl/src/content-mgr-clj/downhome/images/home/flowers_07_s.jpg
+
+;; (wrap-file your-handler "/var/www/public")
 
 ;; Unclear how defonce and lein ring server headless will play together.
 (defn ds []

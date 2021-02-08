@@ -56,7 +56,6 @@
       </td>
     </tr>
   </table>
-  Image directory: {{image_dir}}<br>
   <table border=0 cellspacing=0 cellpadding=3 width="600">
     {{#content}}
     <tr> 
@@ -67,8 +66,8 @@
 	    <input type="hidden" name="con_pk" value="{{con_pk}}">
 	    <input type="submit" name="edit" value="Edit">&nbsp;&nbsp;&nbsp;
       </form>
-
-      <img src="{{site_path}}/{{image_dir}}/{{s_name}}" width="{{s_width}}" height="{{s_height}}" align="right"> 
+      <img src="{{site_path}}/images/{{image_dir}}/{{s_name}}" width="{{s_width}}" height="{{s_height}}" align="right"> 
+      Image directory: {{image_dir}}<br>
       con_pk: {{con_pk}}<br>
       image_name:{{image_name}}<br>
       site_path: {{site_path}}<br>
