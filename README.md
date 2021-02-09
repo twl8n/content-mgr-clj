@@ -45,3 +45,9 @@ x cmgr.state/table doesn't need to be an atom. That is a left-over from reading 
   that might be accidentally checked in.
   
 - 2021-02-07 Improve the default export directory config, maybe with a ~/.cmgr or ~/.app_config
+
+x 2021-02-08 Var template is unused. Remove template as a var from all code, and set page.template to null.
+
+- 2021-02-08 Var owner and field page.owner is unused. Clean up.
+
+- 2021-02-08 HTML param ginfo unused. Clean up.

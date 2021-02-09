@@ -6,43 +6,7 @@
     <link rel="stylesheet" href="../cm_std.css" type="text/css">
   </head>
   <body bgcolor="#FFFFFF" text="#000000">
-    <div id="nav">
-      Our web sites<br>
-      <a href="http://infogizmo.com/">InfoGizmo</a> 
-      <br>
-      <a href="http://defindit.com/">DeFindIt Software</a>
-      <br>
-      <a href="http://laudeman.com/sorghum/">Sorghum Syrup</a>
-      <br>
-      <a href="http://laudeman.com/r1100rt/">BMW R1100RT PIAA</a>
-      <br>
-      <a href="http://laudeman.com/bmw_r850r/">BMW R850R</a>
-      <br>
-      <a href="http://laudeman.com/hondavfr/">Honda VFR750F</a>
-      <br>
-      <a href="http://laudeman.com/hondavlx/">Honda Shadow VLX</a>
-      <br>
-      <a href="http://laudeman.com/bug.html">VW Bug</a>
-      <br>
-      <a href="http://laudeman.com/cabrio/">VW Cabriolet</a>
-      <br>
-      <a href="http://laudeman.com/volkswagen/">Golf, Jetta, NB</a>
-      <br>
-      <a href="http://laudeman.com/trucks/">Wrangler and F-250</a>
-      <br>
-      <a href="http://laudeman.com/klr650/">Kawasaki KLR650</a>
-      <br>
-      <a href="http://laudeman.com/bmw2002.html">BMW 2002</a>
-      <br>
-      <a href="http://laudeman.com/downhome/">Abby's Down Home</a>
-      <br>
-      <a href="http://laudeman.com/">laudeman.com</a>
-      <br>
-      <a href="http://laudeman.com/tom_mail.html">Contact Tom</a>
-      <hr>
-      Click images to enlarge.
-    </div>
-    <!-- end nav -->
+    {{&nav}}
     <div id="content">
       <div align="center">{{body_title}}</div>
       {{&menu_text}}
@@ -50,7 +14,7 @@
       <div class="entry">
 	<!-- {c $start_outer start &lt;div -2 stop &lt;/div&gt; +2 } -->
         {{#start_inner}}
-        <a href="{{pf_name}}">
+        <a href="{{pf_name}}" id="{{ordinal}}">
           <img src="images/{{image_dir}}/{{s_name}}"
                width="{{s_width}}"
                height="{{s_height}}"
@@ -70,8 +34,8 @@
       <div class="entry">
         <!-- {c $remainder start &lt;div -2 stop &lt;/div&gt; +2 } -->
         <!-- ordinal {{ordinal}} item_order {{item_order}} -->
-        <a href="{{pf_name}}">
-          <img src="images/{{image_dir}}/{{s_name}}"
+          <a href="{{pf_name}}" id="{{ordinal}}">
+            <img src="images/{{image_dir}}/{{s_name}}"
                width="{{s_width}}"
                height="{{s_height}}"
                border="0"

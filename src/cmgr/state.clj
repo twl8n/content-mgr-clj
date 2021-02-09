@@ -1,5 +1,6 @@
 (ns cmgr.state
   (:require [clojure.string :as str]
+            [clojure.java.io :as io]
             [next.jdbc :as jdbc]
             [next.jdbc.sql :as sql]
             [next.jdbc.result-set :as rs]
@@ -123,8 +124,7 @@
   (let [result-set (jdbc/execute-one! ds-opts ["select * from page where page_pk=?" (:page_pk @params)])
         [ext_one ext_zero] (if (= 1 (:external_url @params)) ["selected" ""] ["" "selected"])
         ready-data (merge result-set
-                          {:template "edit_page.html"
-                           :d_state "edit_page"
+                          {:d_state "edit_page"
                            :ext_one ext_one
                            :ext_zero ext_zero}
                           )
@@ -135,7 +135,7 @@
   (let [result-set (sql/update! ds-opts
                                 :page
                                 (select-keys @params
-                                             [:template :menu :page_title :body_title
+                                             [:menu :page_title :body_title
                                               :page_name :search_string :image_dir
                                               :site_name :site_path :page_order
                                               :valid_page :external_url :page_pk])
@@ -202,12 +202,18 @@
     true)
   )
 
+;; 2021-02-08 This will re-edit the same item if there is no next, and that's a bit confusing.
 (defn next_item []
-    ;; $script="edit_next.deft";
-    ;; $old_con_pk = $con_pk;
-    ;; $con_pk = 0;
-    ;; do_sql_simple("hondavfr", "", "select con_pk from content where page_fk=\$page_pk and valid_content<>0 and item_order>\$item_order order by item_order asc limit 1");
-  )
+  (let [old_con_pk (:con_pk @params)
+        result-set (jdbc/execute-one!
+                    ds-opts
+                    ["select con_pk from content 
+			where page_fk=? and 
+			valid_content=1 and item_order>? 
+			order by item_order,con_pk limit 1"
+                     (:page_pk @params) (:item_order @params)])]
+    (swap! params #(assoc % :con_pk (:con_pk result-set old_con_pk)))))
+
 
 ;; The old Perl code that attempted to resize the textarea based on the amount of text.
 ;; $drows = p_count($description); # number of <p> or \n in $description
@@ -221,7 +227,7 @@
 		      	image_name, image_width, image_height,
 		      	description, alt_text, valid_content,
 		      	item_order, s_name, s_width, s_height,
-		      	template, menu, page_title, body_title,
+		      	menu, page_title, body_title,
 		      	page_name, search_string, site_name, site_path,
 		      	page_order, valid_page, image_dir, external_url
 		      	from content,page where con_pk=? and page_fk=page_pk"
@@ -259,30 +265,6 @@
 
 ;; Are these item pages or image pages? Ideally, we'd be consistent about the name.
 (defn gen_image_pages [ready-data]
-  ;; # max
-  ;; do_sql_simple("hondavfr", "", "select count(*) as max_ordinal from content where valid_content=1 and page_fk=\$page_pk");
-  ;; # prev
-  ;; do_sql_simple("hondavfr", "", "select count(*) as prev from content where valid_content=1 and page_fk=\$page_pk and item_order<\$item_order");
-  ;; $prev_flag = 1;
-  ;; if (! $prev) {
-  ;;     $prev_flag = 0;
-  ;;     $prev = 0; } # weird things happen if this is changed to 1
-  ;; # get the ordinal of each record, ones based ordinals (not zero based)
-  ;; $ordinal = $prev + 1;
-  ;; # next
-  ;; $next = $prev + 2;
-  ;; $next_flag = 0;
-  ;; if ($next <= $max_ordinal ) { next_flag = 1;  }
-  ;; $prev = "$page_stem\_$prev\_i.html";
-  ;; $next = "$page_stem\_$next\_i.html";
-  ;; $output_file = "$site_path/$page_stem\_$ordinal\_i.html";
-  ;; # If the flag is true use the link, else use the text.
-  ;; # con_pk should be unique to each record we will output.
-  ;; dcc("dcc_prev_link", "con_pk", ["prev_flag == 1"], []);
-  ;; dcc("dcc_prev_text", "con_pk", ["prev_flag == 0"], []);
-  ;; dcc("dcc_next_link", "con_pk", ["next_flag == 1"], []);
-  ;; dcc("dcc_next_text", "con_pk", ["next_flag == 0"], []);
-  ;; render("output_file", "./image_t.html");
   (doseq [page-data (:content-ordinal ready-data)]
     (let [page_pk (:page_pk ready-data)
           item_order (:item_order page-data)
@@ -307,7 +289,8 @@
           html-fragment (clostache/render (slurp "html/image_t.html")
                                           (merge page-data
                                                  ready-data
-                                                 {:next next_flag
+                                                 {:ordinal ordinal
+                                                  :next next_flag
                                                   :next-name next-name
                                                   :prev prev_flag
                                                   :prev-name prev-name}))]
@@ -321,16 +304,19 @@
 (comment
   (cmgr.core/init-config)
   (do (reset! params {:site_name "hondavfr"})
+      (site_gen)
+      (reset! params {:site_name "hondavlx"})
       (site_gen))
   )
 
 
 ;; file:///Users/twl/Sites/content-manager-pages/hondavfr/givi_cases_vfr/givi_cases_vfr_16_s.jpg
 (defn gen_single_page [page_pk menu_text]
-  (let [page-rec (jdbc/execute-one!
+  (let [nav (slurp "html/nav.html")
+        page-rec (jdbc/execute-one!
                   ds-opts
                   ["select
-			page_pk, template, menu, page_title, body_title, page_name,
+			page_pk, menu, page_title, body_title, page_name,
 			search_string, image_dir, site_name, site_path,
 			page_order, valid_page,external_url
 			from page where page_pk=?" page_pk])
@@ -355,6 +341,7 @@
         full_page_name (format "%s/%s" full-site-path (:page_name page-rec))
         ;;     $path_exists = test_path($site_path);
         ready-data (assoc page-rec
+                          :nav nav
                           :page_stem page_stem
                           :menu_text menu_text
                           :full_page_name full_page_name
@@ -378,13 +365,33 @@
     (doseq [single-page result-set]
       (gen_single_page (:page_pk single-page) menu-html))))
 
-;; $menu_text = "";
-;; menu_gen();
-;; agg_simple("page_pk")
-;; {
-;;  gen_single_page();
-;;  }
 
+(defn insert_page []
+  (let [site_path (:site_path @params)
+        image_dir (:image_dir @params)
+        export-path (:export-path @config)]
+    (.mkdirs (format "%s/%s/%s" export-path site_path image_dir))
+    (sql/insert! ds-opts :page (select-keys @params [:menu :page_title :body_title :page_name :search_string :image_dir :site_name :site_path :page_order :valid_page :external_url]))))
+
+(defn clear_continue []
+ (swap! params #(dissoc % :continue)))
+
+(defn edit_new_page []
+  (let [html-result (clostache/render (slurp "html/edit_page.html")
+                                      {:menu ""
+                                       :page_title ""
+                                       :body_title ""
+                                       :page_name ""
+                                       :search_string ""
+                                       :image_dir ""
+                                       :site_name (:site_name @params "") ;; Add new page from existing site or brand new.
+                                       :site_path ""
+                                       :page_order 0.0
+                                       :valid_page 0
+                                       :external_url 0
+                                       :ext_zero "selected"
+                                       :ext_one ""})]
+    (reset! html-out html-result)))
 
 ;; default is page_search
 (def table
@@ -398,7 +405,7 @@
 
    :site_gen
    [[site_gen nil]
-    [fntrue :page_search]]
+    [page_search nil]]
 
    :edit_page
    [[if-save :save_page]
@@ -419,19 +426,14 @@
     [if-auto-gen :auto_gen]
     [item_search nil]]
 
+   ;; :page_gen
+   ;; [[page_gen item_search]]
+
    :edit_item
    [[if-save :save_item]
     [if-continue :save_item_continue]
     [#(if-arg :next) :edit_next]
     [edit_item nil]]
-
-   ;; 0	edit_item	$save	  save_item()	  item_search
-   ;; 1	edit_item	$continue save_item()	  next
-   ;; 2	edit_item	$continue edit_item()	  wait
-   ;; 3	edit_item	$next	  save_item()	  next
-   ;; 4	edit_item	$next	  next_item()	  next
-   ;; 5 edit_item       $con_pk	  edit_item()	  wait
-   ;; 6 edit_item	$true 	  null()	  item_search
 
    :edit_next
    [[save_item nil]
@@ -446,21 +448,6 @@
    [[save_item nil]
     [edit_item nil]]
 
-   })
-
-(comment
-  table-part-two
-  {
-
-   :ask_del_page
-   [[if-confirm :delete_page]
-    [fn-true :page_search]]
-   ;; 0	ask_del_page	$confirm  delete_page()	  page_search
-   ;; 1	ask_del_page	$true	  ask_del_page()  wait
-
-   :delete_page
-   [[delete_page :page_search]]
-
    :edit_new_page
    [[if-save :insert_page]
     [if-continue :insert_continue]
@@ -470,11 +457,21 @@
    [[insert_page :page_search]]
    :insert_continue
    [[insert_page nil]
-    [clear_cont :edit_page]]
+    [clear_continue :edit_page]]
+   })
 
-   :page_gen
-   [[page_gen :item_search]]
+(comment
+  table-part-two
+  {
+   :ask_del_page
+   [[if-confirm :delete_page]
+    [fn-true :page_search]]
+   ;; 0	ask_del_page	$confirm  delete_page()	  page_search
+   ;; 1	ask_del_page	$true	  ask_del_page()  wait
+
+   :delete_page
+   [[delete_page :page_search]]
+
    :auto_gen
    [[auto_gen :item_search]]
-
    })
