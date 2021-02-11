@@ -1,6 +1,7 @@
 (ns cmgr.state
   (:require [clojure.string :as str]
             [clojure.java.io :as io]
+            [clojure.java.shell :as shell]
             [next.jdbc :as jdbc]
             [next.jdbc.sql :as sql]
             [next.jdbc.result-set :as rs]
@@ -393,7 +394,125 @@
                                        :ext_one ""})]
     (reset! html-out html-result)))
 
-;; default is page_search
+(defn page_gen []
+  (gen_single_page (:page_pk @params) (menu_gen (:site_name @params))))
+
+(defn delete_page []
+  )
+
+(defn get_wh [full_name]
+  (let [[_ width height] (re-matches  #"(?s)(\d+)\s+(\d+).*"
+                                      (:out (shell/sh "sh" "-c" (format "jpegtopnm < %s| pnmfile -size" full_name))))]
+    [(Integer. width) (Integer. height)]))
+;; (get_wh "/Users/twl/Sites/content-manager-pages/hondavfr/images/vfr/vfr1.jpg")
+;; (get_wh "/Users/twl/Sites/content-manager-pages/hondavfr/images/vfr/vfr1_s.jpg")
+
+
+  ;; do_sql_simple("hondavfr", "", "select site_path, image_dir from page where page_pk=\$page_pk and owner='\$owner'");
+  ;; # find files, and create a deft record for each file.
+  ;; # find(dir_col_name, proto, results_col_name);
+  ;; $site_path = sprintf("%s/%s", named_config(site_path), $site_path);
+  ;; naive_make_col("full_name", '`find $site_path/$image_dir -maxdepth 1 -mindepth 1 -iname "*[0-9].jpg"`' );
+  ;; chomp($full_name);
+  ;; $image_name = $full_name;
+  ;; $full_s_name = $full_name;
+  ;; $full_s_name =~ s/(\.jpg)/_s\.jpg/i;
+  ;; $s_name = $full_s_name;
+  ;; # remove leading dir
+  ;; $image_name =~ s/.*\/(.*)/$1/;
+  ;; $s_name =~ s/.*\/(.*)/$1/;
+  ;; $item_order = $image_name;
+  ;; # get the file name's sequence number
+  ;; # This will fail if the file name isn't
+  ;; # abc_123.jpg (e.g. if the underscore is missing, item_order is always zero.
+  ;; $item_order =~ s/.*?_(\d+)\.jpg/$1/i;
+  ;; $item_order = abs($item_order);
+  ;; $xsize = 320;
+  ;; # 2005-09-05 Assume that the original file exists, since we got the name from `find`.
+  ;; # For now, assume that the creating the thumbnail works.
+  ;; # 2003-10-11 netpbm is more robust than ImageMagick.
+  ;; # `convert -size 320x240 images/$hr->{image_name} images/$hr->{s_name}`;
+  ;; $conv_results = `./jpegtopnm < $full_name | ./pnmscale -xsize=$xsize | ./pnmtojpeg > $full_s_name 2>&1`;
+  ;; # get_wh() reads $fn and changes the values of $height and $width.
+  ;; $height = 0;
+  ;; $width = 0;
+  ;; $fn = $full_name;
+  ;; get_wh();
+  ;; $image_height = $height;
+  ;; $image_width = $width;
+  ;; # get_wh() reads $fn and changes the values of $height and $width.
+  ;; $fn = $full_s_name;
+  ;; get_wh();
+  ;; $s_width = $width;
+  ;; $s_height = $height;
+  ;; # Min item_order must be 1, not zero. This is probably due to the 
+  ;; # hard coded "2" in page_gen.
+  ;; do_sql_simple("hondavfr",
+  ;;     	  "",
+  ;;     	  "select (con_pk <> 0) as 'exists' from content where image_name='\$image_name'");
+  ;; if (! $exists)
+  ;; {
+  ;;     do_sql_simple("hondavfr", "", "insert into content (page_fk, image_name, image_width, image_height, valid_content, item_order, s_name, s_width, s_height ) values (\$page_pk, '\$image_name', '\$image_width', '\$image_height', 1, '\$item_order', '\$s_name', '\$s_width', '\$s_height' )");
+  ;; }
+  ;; "insert into content 
+  ;; (page_fk,   image_name,     image_width,     image_height,     valid_content, item_order,     s_name,     s_width,     s_height )
+  ;;  values 
+  ;; (\$page_pk, '\$image_name', '\$image_width', '\$image_height', 1,             '\$item_order', '\$s_name', '\$s_width', '\$s_height' )"
+
+;; Create empty items in a page based on images in dir.
+(defn auto_gen []
+  (let [page_pk (:page_pk @params)
+        {:keys [site_path image_dir]} (jdbc/execute-one!
+                                       ds-opts
+                                       ["select site_path, image_dir from page where page_pk=?" page_pk])
+        file-list (.list (io/file (format "%s/images/%s" site_path image_dir)))
+        file-info (map (fn [full_name]
+                         (let [full_s_name (str/replace full_name #"\.jpg" "_s.jpg")
+                               image_name (str/replace full_name #".*\/(.*)" "$1")
+                               xsize 320
+                               conv_results
+                               (:out (shell/sh "sh" "-c"
+                                               (format "`./jpegtopnm < %s | ./pnmscale -xsize=%s | ./pnmtojpeg > %s 2>&1"
+                                                       full_name xsize full_s_name)))
+                               [image_height image_width] (get_wh full_name)
+                               [s_height s_width] (get_wh full_s_name)
+                               {:keys [exists]} (jdbc/execute-one!
+                                                 ds-opts
+                                                 ["select (count(*)>0) as exists from content where image_name=? and page_fk=?"
+                                                  image_name page_pk])
+                               item_order (Integer. (str/replace full_name #".*\/.*_(\d+).jpg" "$1"))
+                               s_name (str/replace full_s_name #".*\/(.*)" "$1")
+                               insert-data {:page_fk page_pk
+                                            :image_name image_name
+                                            :image_width image_width
+                                            :image_height image_height
+                                            :valid_content 1
+                                            :item_order item_order
+                                            :s_name s_name
+                                            :s_width s_width
+                                            :s_height s_height}
+                               ]
+                           (when (= 0 exists)
+                             (sql/insert! ds-opts :content insert-data))
+                           ) file-list))]
+
+    ))
+        
+
+;; Default is page_search.
+;; This is a less than ideal state table because we retain the d_state (e.g. :page_search) between invocations.
+;; We should be saving some "state" information and always running the state machine from the same starting point.
+;; A content manager web app can afford to bend the rules, and time will tell if we've created a buggy mess.
+
+(comment
+  {:starting-default-state
+   [[if-test :other-state]
+    [side-effect-fn-a nil]]
+   :other-state
+   [[site-effect-fn-b nil]
+    [render-html-change-state nil]]}
+  )
+
 (def table
   {:page_search
    [[if-edit :edit_page]
@@ -426,8 +545,9 @@
     [if-auto-gen :auto_gen]
     [item_search nil]]
 
-   ;; :page_gen
-   ;; [[page_gen item_search]]
+   :page_gen
+   [[page_gen nil]
+    [item_search nil]]
 
    :edit_item
    [[if-save :save_item]
@@ -458,20 +578,18 @@
    :insert_continue
    [[insert_page nil]
     [clear_continue :edit_page]]
-   })
 
-(comment
-  table-part-two
-  {
    :ask_del_page
-   [[if-confirm :delete_page]
-    [fn-true :page_search]]
+   [[#(if-arg :confirm) :delete_page]
+    [page_search nil]]
    ;; 0	ask_del_page	$confirm  delete_page()	  page_search
    ;; 1	ask_del_page	$true	  ask_del_page()  wait
 
    :delete_page
-   [[delete_page :page_search]]
+   [[delete_page nil]
+    [page_search nil]]
 
    :auto_gen
    [[auto_gen :item_search]]
    })
+
