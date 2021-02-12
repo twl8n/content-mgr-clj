@@ -30,7 +30,6 @@
 ;; I guess ds-opts is a "datasource with options" in next.jdbc parlance.
 (def ds-opts (jdbc/with-options db {:return-keys true :builder-fn rs/as-unqualified-maps}))
 
-
 (defn msg [arg] (printf "%s\n" arg))
 
 (def params (atom {}))
@@ -55,19 +54,6 @@
 (defn is-return? [arg] false)
 (defn jump-to [arg jstack] [arg (cons arg jstack)])
 
-(defn if-logged-in [] (let [rval (@app-state :if-logged-in)] (msg (str "running if-logged-in: " rval)) rval))
-(defn if-moderator [] (let [rval (@app-state :if-moderator)] (msg (str "running if-moderator: " rval)) rval))
-(defn if-on-dashboard [] (let [rval (@app-state :if-on-dashboard)] (msg (str "if-on-dashboard: " rval)) rval))
-(defn if-want-dashboard [] (let [rval (@app-state :if-want-dashboard)] (msg (str "if-want-dashboard: " rval)) rval))
-
-(defn draw-login [] (msg "running draw-login") false)
-(defn force-logout [] (msg "forcing logout") (swap! app-state #(apply dissoc %  [:if-logged-in])) false)
-(defn draw-dashboard-moderator [] (add-state :if-on-dashboard)  (msg "running draw-dashboard-moderator") false)
-
-(defn draw-dashboard [] (msg "running draw-dashboard") false)
-
-(defn logout [] (msg "running logout") false)
-(defn login [] (msg "running login") false)
 (defn fntrue [] (msg "running fntrue") true)
 (defn fnfalse [] (msg "running fnfalse") false)
 (defn wait [] (msg "running wait, returning false") true) ;; return true because wait ends looping over tests
@@ -81,17 +67,13 @@
     (swap! params #(dissoc % :edit))
     (boolean ret)))
 
-(defn if-delete [] )
-(defn if-insert [] )
-
 ;; (if-arg :item)
 (defn if-arg [tkey]
   (let [tval (tkey @params)
         ret (and (seq tval) tval)]
     (swap! params #(dissoc % tkey))
+    (printf "if-arg %s is %s\n" tkey ret)
     (boolean ret)))
-
-(defn if-site_gen [] )
 
 (defn if-save []
   (let [ret (= "Save" (:save @params))]
@@ -103,8 +85,6 @@
     (swap! params #(dissoc % :continue))
     ret))
         
-(defn if-next [] )
-
 (defn page_search []
   (let [result-set (jdbc/execute! ds-opts ["select * from page where valid_page=1 order by site_name,page_order"])
         db-data {:dcc_site (mapv (fn [xx] {:site_name (key xx)
@@ -169,21 +149,14 @@
                      (:page_pk @params)])
         ;; Need to html-encode :description THEN regex the \n and \r
         ;; I see a \$ in con_pk 2799
-        result-set (mapv #(assoc % :desc-html (str/replace (:description %) #"([\000-\037]+)" "<br><br>")) raw-set)
+        _ (def foo raw-set)
+        result-set (mapv #(assoc % :desc-html (str/replace (or (:description % "") "") #"([\000-\037]+)" "<br><br>")) raw-set)
         ready-data (merge
                     @params
                     {:content result-set :d_state "item_search"})
         html-result (clostache/render (slurp "html/item_search.html") ready-data)]
     (reset! html-out html-result)
     ))
-
-
-(defn if-page-gen []
-  )
-
-(defn if-auto-gen []
-  )
-
 
 ;; Historically, we converted any 4 control characters (newlines) convert to <br><br> tags 
 ;; when saving, and converted the other way when reading from the db and rendering in HTML.
@@ -371,15 +344,18 @@
   (let [site_path (:site_path @params)
         image_dir (:image_dir @params)
         export-path (:export-path @config)]
-    (.mkdirs (format "%s/%s/%s" export-path site_path image_dir))
+    (.mkdirs (io/file (format "%s/%s/images/%s" export-path site_path image_dir)))
     (sql/insert! ds-opts :page (select-keys @params [:menu :page_title :body_title :page_name :search_string :image_dir :site_name :site_path :page_order :valid_page :external_url]))))
+
 
 (defn clear_continue []
  (swap! params #(dissoc % :continue)))
 
+
 (defn edit_new_page []
   (let [html-result (clostache/render (slurp "html/edit_page.html")
-                                      {:menu ""
+                                      {:d_state "edit_new_page"
+                                       :menu ""
                                        :page_title ""
                                        :body_title ""
                                        :page_name ""
@@ -398,105 +374,71 @@
   (gen_single_page (:page_pk @params) (menu_gen (:site_name @params))))
 
 (defn delete_page []
+  (println "fn delete_page does nothing.")
   )
 
 (defn get_wh [full_name]
+  (printf "get_wh full_name: %s\n" full_name)
   (let [[_ width height] (re-matches  #"(?s)(\d+)\s+(\d+).*"
                                       (:out (shell/sh "sh" "-c" (format "jpegtopnm < %s| pnmfile -size" full_name))))]
+    (printf "w: %s h: %s\n" width height)
     [(Integer. width) (Integer. height)]))
 ;; (get_wh "/Users/twl/Sites/content-manager-pages/hondavfr/images/vfr/vfr1.jpg")
 ;; (get_wh "/Users/twl/Sites/content-manager-pages/hondavfr/images/vfr/vfr1_s.jpg")
 
+(comment
+  (cmgr.core/init-config)
+  (def foo (.list (io/file "/Users/twl/Sites/content-manager-pages/1990_f250/images/f250/")))
+  (filter #(re-find #"(?i).*\.jp.*g" %) foo) 
 
-  ;; do_sql_simple("hondavfr", "", "select site_path, image_dir from page where page_pk=\$page_pk and owner='\$owner'");
-  ;; # find files, and create a deft record for each file.
-  ;; # find(dir_col_name, proto, results_col_name);
-  ;; $site_path = sprintf("%s/%s", named_config(site_path), $site_path);
-  ;; naive_make_col("full_name", '`find $site_path/$image_dir -maxdepth 1 -mindepth 1 -iname "*[0-9].jpg"`' );
-  ;; chomp($full_name);
-  ;; $image_name = $full_name;
-  ;; $full_s_name = $full_name;
-  ;; $full_s_name =~ s/(\.jpg)/_s\.jpg/i;
-  ;; $s_name = $full_s_name;
-  ;; # remove leading dir
-  ;; $image_name =~ s/.*\/(.*)/$1/;
-  ;; $s_name =~ s/.*\/(.*)/$1/;
-  ;; $item_order = $image_name;
-  ;; # get the file name's sequence number
-  ;; # This will fail if the file name isn't
-  ;; # abc_123.jpg (e.g. if the underscore is missing, item_order is always zero.
-  ;; $item_order =~ s/.*?_(\d+)\.jpg/$1/i;
-  ;; $item_order = abs($item_order);
-  ;; $xsize = 320;
-  ;; # 2005-09-05 Assume that the original file exists, since we got the name from `find`.
-  ;; # For now, assume that the creating the thumbnail works.
-  ;; # 2003-10-11 netpbm is more robust than ImageMagick.
-  ;; # `convert -size 320x240 images/$hr->{image_name} images/$hr->{s_name}`;
-  ;; $conv_results = `./jpegtopnm < $full_name | ./pnmscale -xsize=$xsize | ./pnmtojpeg > $full_s_name 2>&1`;
-  ;; # get_wh() reads $fn and changes the values of $height and $width.
-  ;; $height = 0;
-  ;; $width = 0;
-  ;; $fn = $full_name;
-  ;; get_wh();
-  ;; $image_height = $height;
-  ;; $image_width = $width;
-  ;; # get_wh() reads $fn and changes the values of $height and $width.
-  ;; $fn = $full_s_name;
-  ;; get_wh();
-  ;; $s_width = $width;
-  ;; $s_height = $height;
-  ;; # Min item_order must be 1, not zero. This is probably due to the 
-  ;; # hard coded "2" in page_gen.
-  ;; do_sql_simple("hondavfr",
-  ;;     	  "",
-  ;;     	  "select (con_pk <> 0) as 'exists' from content where image_name='\$image_name'");
-  ;; if (! $exists)
-  ;; {
-  ;;     do_sql_simple("hondavfr", "", "insert into content (page_fk, image_name, image_width, image_height, valid_content, item_order, s_name, s_width, s_height ) values (\$page_pk, '\$image_name', '\$image_width', '\$image_height', 1, '\$item_order', '\$s_name', '\$s_width', '\$s_height' )");
-  ;; }
-  ;; "insert into content 
-  ;; (page_fk,   image_name,     image_width,     image_height,     valid_content, item_order,     s_name,     s_width,     s_height )
-  ;;  values 
-  ;; (\$page_pk, '\$image_name', '\$image_width', '\$image_height', 1,             '\$item_order', '\$s_name', '\$s_width', '\$s_height' )"
+  (do (reset! params {:findme ""
+                      :d_state :item_search
+                      :page_pk 4288
+                      :auto_gen "Auto Gen Items"})
+      (auto_gen))
+      )
 
-;; Create empty items in a page based on images in dir.
+;; Important that file-list is only good jpeg files with names matching #"(?i).*_\d+\.jp.*g"
+;; Do not process foo_123_s.jpg files or any non-jpeg files.
 (defn auto_gen []
+  (printf "auto_gen starts\n")
   (let [page_pk (:page_pk @params)
         {:keys [site_path image_dir]} (jdbc/execute-one!
                                        ds-opts
                                        ["select site_path, image_dir from page where page_pk=?" page_pk])
-        file-list (.list (io/file (format "%s/images/%s" site_path image_dir)))
-        file-info (map (fn [full_name]
-                         (let [full_s_name (str/replace full_name #"\.jpg" "_s.jpg")
-                               image_name (str/replace full_name #".*\/(.*)" "$1")
-                               xsize 320
-                               conv_results
-                               (:out (shell/sh "sh" "-c"
-                                               (format "`./jpegtopnm < %s | ./pnmscale -xsize=%s | ./pnmtojpeg > %s 2>&1"
-                                                       full_name xsize full_s_name)))
-                               [image_height image_width] (get_wh full_name)
-                               [s_height s_width] (get_wh full_s_name)
-                               {:keys [exists]} (jdbc/execute-one!
-                                                 ds-opts
-                                                 ["select (count(*)>0) as exists from content where image_name=? and page_fk=?"
-                                                  image_name page_pk])
-                               item_order (Integer. (str/replace full_name #".*\/.*_(\d+).jpg" "$1"))
-                               s_name (str/replace full_s_name #".*\/(.*)" "$1")
-                               insert-data {:page_fk page_pk
-                                            :image_name image_name
-                                            :image_width image_width
-                                            :image_height image_height
-                                            :valid_content 1
-                                            :item_order item_order
-                                            :s_name s_name
-                                            :s_width s_width
-                                            :s_height s_height}
-                               ]
-                           (when (= 0 exists)
-                             (sql/insert! ds-opts :content insert-data))
-                           ) file-list))]
-
-    ))
+        file-list (filter #(re-find #"(?i).*_\d+\.jp.*g" %)
+                          (.list (io/file (format "%s/%s/images/%s" (:export-path @config) site_path image_dir))))]
+    (printf "auto_gen file-list: %s\n" (str/join " " file-list))
+    (doseq [short_name file-list]
+      (let [full_name (format "%s/%s/images/%s/%s" (:export-path @config) site_path image_dir short_name)
+            full_s_name (str/replace full_name #"(?i)\.jp.*g" "_s.jpg")
+            image_name (str/replace full_name #".*\/(.*)" "$1")
+            xsize 320
+            cmd (format "jpegtopnm < %s | pnmscale -xsize=%s | pnmtojpeg > %s 2>&1" full_name xsize full_s_name)
+            conv_results
+            (shell/sh "sh" "-c" cmd)
+            _ (printf "cmd: %s\nconf_res: %s\n" cmd conv_results)
+            [image_height image_width] (get_wh full_name)
+            [s_height s_width] (get_wh full_s_name)
+            {:keys [exists]} (jdbc/execute-one!
+                              ds-opts
+                              ["select (count(*)>0) as 'exists' from content where image_name=? and page_fk=?"
+                               image_name page_pk])
+            item_order (Integer. (str/replace full_name #"(?i).*\/.*_(\d+).jp.*g" "$1"))
+            s_name (str/replace full_s_name #".*\/(.*)" "$1")
+            insert-data {:page_fk page_pk
+                         :image_name image_name
+                         :image_width image_width
+                         :image_height image_height
+                         :valid_content 1
+                         :description "enter a description"
+                         :item_order item_order
+                         :s_name s_name
+                         :s_width s_width
+                         :s_height s_height}]
+        (when (= 0 exists)
+          (sql/insert! ds-opts :content insert-data))
+        ))))
         
 
 ;; Default is page_search.
@@ -505,6 +447,7 @@
 ;; A content manager web app can afford to bend the rules, and time will tell if we've created a buggy mess.
 
 (comment
+  ;; This sort of describes the map of lists of lists that is the state table.
   {:starting-default-state
    [[if-test :other-state]
     [side-effect-fn-a nil]]
@@ -516,10 +459,10 @@
 (def table
   {:page_search
    [[if-edit :edit_page]
-    [if-delete :ask_delete_page]
-    [if-insert :edit_new_page]
+    [#(if-arg :delete) :ask_delete_page]
+    [#(if-arg :insert) :edit_new_page]
     [#(if-arg :item) :item_search]
-    [if-site_gen :site_gen]
+    [#(if-arg :site_gen) :site_gen]
     [page_search nil]]
 
    :site_gen
@@ -541,8 +484,8 @@
 
    :item_search
    [[if-edit :edit_item]
-    [if-page-gen :page_gen]
-    [if-auto-gen :auto_gen]
+    [#(if-arg :page-gen) :page_gen]
+    [#(if-arg :auto_gen) :auto_gen]
     [item_search nil]]
 
    :page_gen
