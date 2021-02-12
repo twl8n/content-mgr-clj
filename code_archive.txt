@@ -1,3 +1,8 @@
+;; (get_wh "/Users/twl/Sites/content-manager-pages/hondavfr/images/vfr/vfr1.jpg")
+;; (get_wh "/Users/twl/Sites/content-manager-pages/hondavfr/images/vfr/vfr1_s.jpg")
+;; (get_wh "/Users/twl/Sites/content-manager-pages/1990_f250/images/f250/IMG_1142.JPG")
+;; (get_wh "/Users/twl/Sites/content-manager-pages/1990_f250/images/f250/IMG_1142_s.JPG")
+;;  full_name "/Users/twl/Sites/content-manager-pages/1990_f250/images/f250/IMG_1142.JPG"
 
 
 (comment

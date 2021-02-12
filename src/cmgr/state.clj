@@ -72,7 +72,6 @@
   (let [tval (tkey @params)
         ret (and (seq tval) tval)]
     (swap! params #(dissoc % tkey))
-    (printf "if-arg %s is %s\n" tkey ret)
     (boolean ret)))
 
 (defn if-save []
@@ -260,7 +259,6 @@
           next-name (format "%s_%s_i.html" page_stem next)
           ;; full-site-path (format "%s/%s" (:export-path @config) (:site_path page-rec))       
           full_page_name (format "%s/%s/%s_%s_i.html" (:export-path @config) site_path page_stem ordinal)
-          _ (prn "page_fk: " page_pk "ordinal: " ordinal "item_order: " (:item_order page-data) "con_pk: " (:con_pk page-data))
           html-fragment (clostache/render (slurp "html/image_t.html")
                                           (merge page-data
                                                  ready-data
@@ -377,16 +375,9 @@
   )
 
 (defn get_wh [full_name]
-  (printf "get_wh full_name: %s\n" full_name)
   (let [[_ width height] (re-matches  #"(?s)(\d+)\s+(\d+).*"
                                       (:out (shell/sh "sh" "-c" (format "jpegtopnm < %s| pnmfile -size" full_name))))]
-    (printf "w: %s h: %s\n" width height)
     [(Integer. width) (Integer. height)]))
-;; (get_wh "/Users/twl/Sites/content-manager-pages/hondavfr/images/vfr/vfr1.jpg")
-;; (get_wh "/Users/twl/Sites/content-manager-pages/hondavfr/images/vfr/vfr1_s.jpg")
-;; (get_wh "/Users/twl/Sites/content-manager-pages/1990_f250/images/f250/IMG_1142.JPG")
-;; (get_wh "/Users/twl/Sites/content-manager-pages/1990_f250/images/f250/IMG_1142_s.JPG")
-;;  full_name "/Users/twl/Sites/content-manager-pages/1990_f250/images/f250/IMG_1142.JPG"
 
 (comment
   (let [xsize 320
@@ -410,14 +401,12 @@
 ;; Important that file-list is only good jpeg files with names matching #"(?i).*_\d+\.jp.*g"
 ;; Do not process foo_123_s.jpg files or any non-jpeg files.
 (defn auto_gen []
-  (printf "auto_gen starts\n")
   (let [page_pk (:page_pk @params)
         {:keys [site_path image_dir]} (jdbc/execute-one!
                                        ds-opts
                                        ["select site_path, image_dir from page where page_pk=?" page_pk])
         file-list (filter #(re-find #"(?i).*_\d+\.jp.*g" %)
                           (.list (io/file (format "%s/%s/images/%s" (:export-path @config) site_path image_dir))))]
-    (printf "auto_gen file-list: %s\n" (str/join " " file-list))
     (doseq [short_name file-list]
       (let [full_name (format "%s/%s/images/%s/%s" (:export-path @config) site_path image_dir short_name)
             full_s_name (str/replace full_name #"(?i)\.jp.*g" "_s.jpg")
@@ -426,7 +415,6 @@
             cmd (format "jpegtopnm < %s | pnmscale -xsize=%s | pnmtojpeg > %s 2>&1" full_name xsize full_s_name)
             conv_results
             (shell/sh "sh" "-c" cmd)
-            _ (printf "cmd: %s\nconf_res: %s\n" cmd conv_results)
             [image_width image_height] (get_wh full_name)
             [s_width s_height] (get_wh full_s_name)
             {:keys [exists]} (jdbc/execute-one!

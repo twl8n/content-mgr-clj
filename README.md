@@ -22,6 +22,10 @@ You need a sqlite database named cmgr.db.
 ? 2021-02-11 image scale in auto_gen needs to deal with both horizontal and vertical images. 
   image_t.html probably also needs work to support horizontal and vertical images.
 
+- 2021-02-12 Maybe strip all exif from jpeg images. Converting to pnm and back to jpeg should work.
+  jpegtopnm < foo.jpeg -dumpexif -exif=tmp.exif > tmp.pnm
+  pnmtojpeg < tmp.pnm > tmp.jpg
+
 - 2021-02-11 fix item_order in auto_gen to sort the items by their numerical image suffix, and then determine ordinals.
   We don't want IMG_1142.JPG to result in the item_order being 1142.0.
 
