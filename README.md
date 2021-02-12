@@ -19,8 +19,13 @@ You need a sqlite database named cmgr.db.
 
 #### todo
 
-x cmgr.state/table doesn't need to be an atom. That is a left-over from reading the state table from a file.
-  Change it to a normal var.
+? 2021-02-11 image scale in auto_gen needs to deal with both horizontal and vertical images. 
+  image_t.html probably also needs work to support horizontal and vertical images.
+
+- 2021-02-11 fix item_order in auto_gen to sort the items by their numerical image suffix, and then determine ordinals.
+  We don't want IMG_1142.JPG to result in the item_order being 1142.0.
+
+- 2021-02-11 Consider adding the top menu to image_t.html aka the big image pages.
 
 - Most (all?) pages with save and save & continue also need "cancel".
 
@@ -46,8 +51,16 @@ x cmgr.state/table doesn't need to be an atom. That is a left-over from reading 
   
 - 2021-02-07 Improve the default export directory config, maybe with a ~/.cmgr or ~/.app_config
 
-x 2021-02-08 Var template is unused. Remove template as a var from all code, and set page.template to null.
-
 - 2021-02-08 Var owner and field page.owner is unused. Clean up.
 
 - 2021-02-08 HTML param ginfo unused. Clean up.
+
+fixed 2021-02-11 menu_gen breaks if there is only a single menu item
+
+fixed 2021-02-08 Var template is unused. Remove template as a var from all code, and set page.template to null.
+
+fixed 2021-02-11 page_search "make site" works. item_search "make page" fails to create the top menu, and may not generate index.html.
+
+fixed cmgr.state/table doesn't need to be an atom. That is a left-over from reading the state table from a file.
+  Change it to a normal var.
+

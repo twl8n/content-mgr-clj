@@ -145,14 +145,15 @@
 (defn item_search []
   (let [raw-set (jdbc/execute!
                     ds-opts
-                    ["select content.*, page.image_dir, page.site_path from content,page where page_fk=? and page_pk=page_fk order by item_order"
+                    ["select content.*, page.site_name, page.image_dir, page.site_path 
+			from content,page where page_fk=? and page_pk=page_fk order by item_order"
                      (:page_pk @params)])
         ;; Need to html-encode :description THEN regex the \n and \r
         ;; I see a \$ in con_pk 2799
-        _ (def foo raw-set)
         result-set (mapv #(assoc % :desc-html (str/replace (or (:description % "") "") #"([\000-\037]+)" "<br><br>")) raw-set)
         ready-data (merge
                     @params
+                    {:site_name (:site_name (first raw-set))}
                     {:content result-set :d_state "item_search"})
         html-result (clostache/render (slurp "html/item_search.html") ready-data)]
     (reset! html-out html-result)
@@ -224,7 +225,8 @@
         ordinal-set (map-indexed #(assoc %2 :ordinal  %1) result-set)
         desired-columns 5.0
         ;; Use quot to get an integer number of lines from a rounded-up float number of lines.
-        number-of-lines (quot (+ 0.5 (/ (count ordinal-set) desired-columns)) 1)  ;; 3 for hondavfr
+        ;; Require at least desired-columns as a min that yields 1 line.
+        number-of-lines (quot (+ 0.5 (/ (max desired-columns (count ordinal-set)) desired-columns)) 1)  ;; 3 for hondavfr
         pb-set (mapv #(assoc % :page_break (mod (:ordinal %) number-of-lines)) ordinal-set)
         ready-data (assoc {} :menu_line (mapv (fn [xx] {:first_col (val xx)}) (group-by :page_break pb-set)))
         ]
@@ -232,7 +234,6 @@
     (clostache/render (slurp "html/menu_template.html") ready-data)))
 
 (comment
-  (remove :flag [{:foo 1 :flag false} {:foo 2 :flag true}])
   ;; page_pk 543 ;; hondavfr page with lots of images
   (gen_single_page 543 (menu_gen "hondavfr"))
   )
@@ -268,8 +269,6 @@
                                                   :next-name next-name
                                                   :prev prev_flag
                                                   :prev-name prev-name}))]
-      ;; hondavfr/index_1_i.html (No such file or directory)
-      ;; (prn full_page_name)
       (spit full_page_name html-fragment)
       )))
 
@@ -385,8 +384,18 @@
     [(Integer. width) (Integer. height)]))
 ;; (get_wh "/Users/twl/Sites/content-manager-pages/hondavfr/images/vfr/vfr1.jpg")
 ;; (get_wh "/Users/twl/Sites/content-manager-pages/hondavfr/images/vfr/vfr1_s.jpg")
+;; (get_wh "/Users/twl/Sites/content-manager-pages/1990_f250/images/f250/IMG_1142.JPG")
+;; (get_wh "/Users/twl/Sites/content-manager-pages/1990_f250/images/f250/IMG_1142_s.JPG")
+;;  full_name "/Users/twl/Sites/content-manager-pages/1990_f250/images/f250/IMG_1142.JPG"
 
 (comment
+  (let [xsize 320
+        full_name "/Users/twl/Sites/content-manager-pages/1990_f250/images/f250/IMG_1142.JPG"
+        full_s_name "/Users/twl/Sites/content-manager-pages/1990_f250/images/f250/IMG_1142_s.JPG"
+        cmd (format "jpegtopnm < %s | pnmscale -xsize=%s -verbose | pnmtojpeg > %s 2>&1" full_name xsize full_s_name)]
+        (shell/sh "sh" "-c" cmd))
+
+
   (cmgr.core/init-config)
   (def foo (.list (io/file "/Users/twl/Sites/content-manager-pages/1990_f250/images/f250/")))
   (filter #(re-find #"(?i).*\.jp.*g" %) foo) 
@@ -418,8 +427,8 @@
             conv_results
             (shell/sh "sh" "-c" cmd)
             _ (printf "cmd: %s\nconf_res: %s\n" cmd conv_results)
-            [image_height image_width] (get_wh full_name)
-            [s_height s_width] (get_wh full_s_name)
+            [image_width image_height] (get_wh full_name)
+            [s_width s_height] (get_wh full_s_name)
             {:keys [exists]} (jdbc/execute-one!
                               ds-opts
                               ["select (count(*)>0) as 'exists' from content where image_name=? and page_fk=?"
@@ -484,7 +493,7 @@
 
    :item_search
    [[if-edit :edit_item]
-    [#(if-arg :page-gen) :page_gen]
+    [#(if-arg :page_gen) :page_gen]
     [#(if-arg :auto_gen) :auto_gen]
     [item_search nil]]
 
