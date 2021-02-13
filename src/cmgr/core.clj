@@ -75,7 +75,6 @@
 
 (defn traverse
   [state]
-  ;; (printf "state=%s\n" state)
   (if (nil? state)
     nil
     (loop [tt (state cmgr.state/table)]
@@ -94,22 +93,18 @@
   [request]
   (cmgr.state/set-config {:export-path export-path})
   (let [temp-params (as-> request yy
-                      (:params yy)
+                      (:form-params yy) ;; We only support POST requests now.
                       (reduce-kv #(assoc %1 (keyword %2) (clojure.string/trim %3))  {} yy)
                       (assoc yy
-                             :d_state (keyword (:d_state yy)))
-                      )]
-    ;; An unfinished thought.
-    ;; (map (fn [xx] (cmgr.state/add-state xx)))
+                             :d_state (keyword (:d_state yy))))]
     (cmgr.state/set-params temp-params)
-    ;; (pp/pprint request)
-    (pp/pprint (str "@params: " @cmgr.state/params))
-    (println ":page_fk " (:page_fk @cmgr.state/params))
+    (println "request:")
+    (pp/pprint request)
+    ;; (pp/pprint (str "@params: " @cmgr.state/params))
     (traverse (or (:d_state temp-params) :page_search))
     {:status 200
      :headers {"Content-Type" "text/html"}
-     :body @cmgr.state/html-out}
-    ))
+     :body @cmgr.state/html-out}))
 
 (comment
   (let [request {:params {"d_state" "page_search"

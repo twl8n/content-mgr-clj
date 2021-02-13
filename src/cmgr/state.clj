@@ -380,63 +380,65 @@
     [(Integer. width) (Integer. height)]))
 
 (comment
-  (let [xsize 320
-        full_name "/Users/twl/Sites/content-manager-pages/1990_f250/images/f250/IMG_1142.JPG"
-        full_s_name "/Users/twl/Sites/content-manager-pages/1990_f250/images/f250/IMG_1142_s.JPG"
-        cmd (format "jpegtopnm < %s | pnmscale -xsize=%s -verbose | pnmtojpeg > %s 2>&1" full_name xsize full_s_name)]
-        (shell/sh "sh" "-c" cmd))
-
-
   (cmgr.core/init-config)
-  (def foo (.list (io/file "/Users/twl/Sites/content-manager-pages/1990_f250/images/f250/")))
-  (filter #(re-find #"(?i).*\.jp.*g" %) foo) 
-
   (do (reset! params {:findme ""
                       :d_state :item_search
                       :page_pk 4288
                       :auto_gen "Auto Gen Items"})
       (auto_gen))
-      )
+  )
 
-;; Important that file-list is only good jpeg files with names matching #"(?i).*_\d+\.jp.*g"
-;; Do not process foo_123_s.jpg files or any non-jpeg files.
+;; the old, doseq item_order that was literally the file numerical suffix.
+;; item_order (Integer. (str/replace full_name #"(?i).*\/.*_(\d+).jp.*g" "$1"))
+(defn gen-core
+  "Do side effects, return (inc item_order)"
+  [pdata short_name item_order]
+  (let [{:keys [site_path image_dir page_pk]} pdata
+        full_name (format "%s/%s/images/%s/%s" (:export-path @config) site_path image_dir short_name)
+        full_s_name (str/replace full_name #"(?i)\.jp.*g" "_s.jpg")
+        image_name (str/replace full_name #".*\/(.*)" "$1")
+        xsize 320
+        cmd (format "jpegtopnm < %s | pnmscale -xsize=%s | pnmtojpeg > %s 2>&1" full_name xsize full_s_name)
+        conv_results
+        (shell/sh "sh" "-c" cmd)
+        [image_width image_height] (get_wh full_name)
+        [s_width s_height] (get_wh full_s_name)
+        {:keys [exists]} (jdbc/execute-one!
+                          ds-opts
+                          ["select (count(*)>0) as 'exists' from content where image_name=? and page_fk=?"
+                           image_name page_pk])
+        s_name (str/replace full_s_name #".*\/(.*)" "$1")
+        insert-data {:page_fk page_pk
+                     :image_name image_name
+                     :image_width image_width
+                     :image_height image_height
+                     :valid_content 1
+                     :description "enter a description"
+                     :item_order item_order
+                     :s_name s_name
+                     :s_width s_width
+                     :s_height s_height}]
+    (when (= 0 exists)
+      (sql/insert! ds-opts :content insert-data)))
+  (inc item_order))
+
+;; Create a file-list that only contains good jpeg files, in order of their numeric suffix.
 (defn auto_gen []
   (let [page_pk (:page_pk @params)
         {:keys [site_path image_dir]} (jdbc/execute-one!
                                        ds-opts
                                        ["select site_path, image_dir from page where page_pk=?" page_pk])
-        file-list (filter #(re-find #"(?i).*_\d+\.jp.*g" %)
-                          (.list (io/file (format "%s/%s/images/%s" (:export-path @config) site_path image_dir))))]
-    (doseq [short_name file-list]
-      (let [full_name (format "%s/%s/images/%s/%s" (:export-path @config) site_path image_dir short_name)
-            full_s_name (str/replace full_name #"(?i)\.jp.*g" "_s.jpg")
-            image_name (str/replace full_name #".*\/(.*)" "$1")
-            xsize 320
-            cmd (format "jpegtopnm < %s | pnmscale -xsize=%s | pnmtojpeg > %s 2>&1" full_name xsize full_s_name)
-            conv_results
-            (shell/sh "sh" "-c" cmd)
-            [image_width image_height] (get_wh full_name)
-            [s_width s_height] (get_wh full_s_name)
-            {:keys [exists]} (jdbc/execute-one!
-                              ds-opts
-                              ["select (count(*)>0) as 'exists' from content where image_name=? and page_fk=?"
-                               image_name page_pk])
-            item_order (Integer. (str/replace full_name #"(?i).*\/.*_(\d+).jp.*g" "$1"))
-            s_name (str/replace full_s_name #".*\/(.*)" "$1")
-            insert-data {:page_fk page_pk
-                         :image_name image_name
-                         :image_width image_width
-                         :image_height image_height
-                         :valid_content 1
-                         :description "enter a description"
-                         :item_order item_order
-                         :s_name s_name
-                         :s_width s_width
-                         :s_height s_height}]
-        (when (= 0 exists)
-          (sql/insert! ds-opts :content insert-data))
-        ))))
+        sort-fn (fn [xx]
+                  (Integer. (nth (re-matches #"(?i)(?:.*\/)*.*_(\d+)\.jp.*g" xx) 1 "0")))
+        filter-fn (fn [xx] (re-find #"(?i).*_\d+\.jp.*g" xx))
+        file-list (->> (.list (io/file (format "%s/%s/images/%s" (:export-path @config) site_path image_dir)))
+                       (filter filter-fn)
+                       (sort-by sort-fn))
+        page-data {:page_pk page_pk :site_path site_path :image_dir image_dir}]
+    ;; Using reduce this way is like run! with an (ordinal) index
+    (reduce #(gen-core page-data %2 %1) 1 file-list)))
         
+
 
 ;; Default is page_search.
 ;; This is a less than ideal state table because we retain the d_state (e.g. :page_search) between invocations.

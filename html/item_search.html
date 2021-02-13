@@ -13,8 +13,8 @@
       <tr> 
         <td bgcolor="#99CCCC" valign=top> 
           <div align="center">
-            <form action="" method=POST>
-              <input type=text name=findme value="{{findme_encoded}}" size=50>
+            <form action="./" method=POST>
+              <input type="text" name="findme" value="{{findme_encoded}}" size=50>
 	      <input type="hidden" name="d_state" value="{{d_state}}">
 	      <input type="hidden" name="page_pk" value="{{page_pk}}">
               <input type="hidden" name="site_name" value="{{site_name}}">
@@ -25,11 +25,15 @@
           <table border=0 cellpadding=0 cellspacing=0 width="100%">
 	    <tr valign="top">
 	      <td>
-	        <a href="/?d_state=page_search">Site/page list</a><br>
-	        page_pk:{{page_pk}}
+	        <form action="./" method=POST>
+                  <input type="hidden" name="d_state" value="page_search">
+                  <input type="submit" name="submit" value="Site/page list">
+                </form>
+                <br>
+	        page_pk: {{page_pk}}
 	      </td>
 	      <td>
-                <form action="" method="post">
+                <form action="./" method="post">
                   <input type="hidden" name="findme" value="{{findme_encoded}}">
 	          <input type="hidden" name="d_state" value="{{d_state}}">
 	          <input type="hidden" name="page_pk" value="{{page_pk}}">
@@ -38,7 +42,7 @@
                 </form>
 	      </td>
 	      <td>
-                <form action="" method="post">
+                <form action="./" method="post">
                   <input type="hidden" name="findme" value="{{findme_encoded}}">
 	          <input type="hidden" name="d_state" value="{{d_state}}">
 	          <input type="hidden" name="page_pk" value="{{page_pk}}">
@@ -47,7 +51,7 @@
                 </form>
 	      </td>
 	      <td>
-                <form action="" method="post">
+                <form action="./" method="post">
                   <input type="hidden" name="findme" value="{{findme_encoded}}">
 	          <input type="hidden" name="d_state" value="{{d_state}}">
 	          <input type="hidden" name="page_pk" value="{{page_pk}}">
@@ -64,7 +68,7 @@
       {{#content}}
       <tr> 
         <td bgcolor="#EEEEEE">
-          <form action="" method="post">
+          <form action="./" method="post">
             <input type="hidden" name="findme" value="{{findme_encoded}}">
 	    <input type="hidden" name="d_state" value="{{d_state}}">
 	    <input type="hidden" name="con_pk" value="{{con_pk}}">

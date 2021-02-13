@@ -1,3 +1,18 @@
+
+;; run!
+;; (reduce #(proc %2) nil coll)
+;; run! with index
+(comment
+  (let [site_path "foo-path"
+        mfn (fn [sp xx dex] (prn sp xx dex)) ]
+    (reduce #(let [xx %2
+                   dex %1]
+               (mfn site_path xx dex)
+               (inc dex)) 1 [4 5 6 7]))
+  )
+
+
+
 ;; (get_wh "/Users/twl/Sites/content-manager-pages/hondavfr/images/vfr/vfr1.jpg")
 ;; (get_wh "/Users/twl/Sites/content-manager-pages/hondavfr/images/vfr/vfr1_s.jpg")
 ;; (get_wh "/Users/twl/Sites/content-manager-pages/1990_f250/images/f250/IMG_1142.JPG")
