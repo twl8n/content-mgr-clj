@@ -79,9 +79,8 @@
     nil
     (loop [tt (state cmgr.state/table)]
       (let [curr (first tt)
-            _ (prn (nth curr 0))
+            ;; _ (prn (nth curr 0))
             test-result ((nth curr 0))]
-        ;; (printf "curr=%s test-result: %s\n" curr test-result)
         (cond (and test-result (some? (nth curr 1))) (traverse (nth curr 1))
               (seq (rest tt)) (recur (rest tt))
               :else nil)))))
@@ -98,8 +97,8 @@
                       (assoc yy
                              :d_state (keyword (:d_state yy))))]
     (cmgr.state/set-params temp-params)
-    (println "request:")
-    (pp/pprint request)
+    ;; (println "request:")
+    ;; (pp/pprint request)
     ;; (pp/pprint (str "@params: " @cmgr.state/params))
     (traverse (or (:d_state temp-params) :page_search))
     {:status 200
@@ -120,6 +119,14 @@
   tp)
   )
 
+;; 2021-02-13 if you wanted ring to serve the resulting static html, you would probably need something like
+;; this to handle making index.html the default. Probably add it after the other handlers.
+;; We are not currently using ring to serve static pages created by the content manager.
+(defn wrap-dir-index [handler]
+  (fn [req]
+    (handler
+     (update-in req [:uri]
+                #(if (= "/" %) "/index.html" %)))))
 
 (def app
   (-> handler

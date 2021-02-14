@@ -8,6 +8,13 @@
             [clostache.parser :as clostache] ;; [clostache.parser :refer [render]]
             [clojure.pprint :as pp]))
 
+;; Work around a feature (or bug) in clostache that turns $ into \$ and \ into \\
+;; but only in data fields.
+(defn my-render [template data]
+  (str/replace
+   (clostache/render template data)
+   #"[\\]{1}(.)" "$1"))
+
 (def config (atom {}))
 
 ;; This won't work until cmgr.core has finished compiling.
@@ -95,7 +102,7 @@
                            :s (if (> recf 1) "s" "")}
                           db-data
                           )
-        html-result (clostache/render (slurp "html/page_search.html") ready-data)]
+        html-result (my-render (slurp "html/page_search.html") ready-data)]
     (reset! html-out html-result)
     )
   )
@@ -108,7 +115,7 @@
                            :ext_one ext_one
                            :ext_zero ext_zero}
                           )
-        html-result (clostache/render (slurp "html/edit_page.html") ready-data)]
+        html-result (my-render (slurp "html/edit_page.html") ready-data)]
     (reset! html-out html-result)))
 
 (defn save_page []
@@ -154,9 +161,8 @@
                     @params
                     {:site_name (:site_name (first raw-set))}
                     {:content result-set :d_state "item_search"})
-        html-result (clostache/render (slurp "html/item_search.html") ready-data)]
-    (reset! html-out html-result)
-    ))
+        html-result (my-render (slurp "html/item_search.html") ready-data)]
+    (reset! html-out html-result)))
 
 ;; Historically, we converted any 4 control characters (newlines) convert to <br><br> tags 
 ;; when saving, and converted the other way when reading from the db and rendering in HTML.
@@ -173,8 +179,8 @@
                                              [:description :alt_text :item_order :valid_content])
                                 {:page_fk (:page_fk @params)
                                  :con_pk (:con_pk @params)})]
-    true)
-  )
+    true))
+
 
 ;; 2021-02-08 This will re-edit the same item if there is no next, and that's a bit confusing.
 (defn next_item []
@@ -211,9 +217,8 @@
                           {:drows 20
                            :page_pk (:page_fk result-set)
                            :d_state "edit_item"})
-        html-result (clostache/render (slurp "html/edit_item.html") ready-data)]
-    (reset! html-out html-result)
-    ))
+        html-result (my-render (slurp "html/edit_item.html") ready-data)]
+    (reset! html-out html-result)))
 
 (defn menu_gen [site_name]
   (let [;; site_name "hondavfr"
@@ -230,7 +235,7 @@
         ready-data (assoc {} :menu_line (mapv (fn [xx] {:first_col (val xx)}) (group-by :page_break pb-set)))
         ]
     ;; returns an html fragment
-    (clostache/render (slurp "html/menu_template.html") ready-data)))
+    (my-render (slurp "html/menu_template.html") ready-data)))
 
 (comment
   ;; page_pk 543 ;; hondavfr page with lots of images
@@ -239,7 +244,7 @@
 
 ;; Are these item pages or image pages? Ideally, we'd be consistent about the name.
 (defn gen_image_pages [ready-data]
-  (doseq [page-data (:content-ordinal ready-data)]
+  (doseq [page-data (:content-ordinal ready-data)] ;; :description \n changed to <br> in gen_single_page.
     (let [page_pk (:page_pk ready-data)
           item_order (:item_order page-data)
           page_stem (:page_stem ready-data)
@@ -259,7 +264,7 @@
           next-name (format "%s_%s_i.html" page_stem next)
           ;; full-site-path (format "%s/%s" (:export-path @config) (:site_path page-rec))       
           full_page_name (format "%s/%s/%s_%s_i.html" (:export-path @config) site_path page_stem ordinal)
-          html-fragment (clostache/render (slurp "html/image_t.html")
+          html-fragment (my-render (slurp "html/image_t.html")
                                           (merge page-data
                                                  ready-data
                                                  {:ordinal ordinal
@@ -280,8 +285,13 @@
       (site_gen))
   )
 
+;; This is especially for :description, but might be necessary for other text that has HTML line breaks.
+;; Eventually, we might need to support other embedded HTML (or not).
+;; Any field that gets this treatment needs to be HTML enabled in clostache with & as in: {{&foo}}
+(defn newline-to-br [some-text]
+  (str/replace some-text #"[\n\r]{2}" "<br>"))
 
-;; file:///Users/twl/Sites/content-manager-pages/hondavfr/givi_cases_vfr/givi_cases_vfr_16_s.jpg
+
 (defn gen_single_page [page_pk menu_text]
   (let [nav (slurp "html/nav.html")
         page-rec (jdbc/execute-one!
@@ -292,25 +302,22 @@
 			page_order, valid_page,external_url
 			from page where page_pk=?" page_pk])
         page_stem (second (re-matches #"(.*)\..*" (:page_name page-rec)))
-        content-recs (jdbc/execute!
+        content-raw (jdbc/execute!
                       ds-opts
                       ["select con_pk,image_height,description,alt_text,valid_content,s_name,s_width,s_height,
 			image_name,image_width,item_order
 			from content where page_fk=? and valid_content=1 order by item_order, con_pk" page_pk])
+        ;; Changing content-raw here effects all downstream code, like gen_image_pages.
+        content-recs (mapv #(assoc %1 :description (newline-to-br (:description %1))) content-raw)
         ;; For :flag I'm pretty sure we want the first record which is ordinal (index) zero.
         content-ordinal (map-indexed #(assoc %2 :ordinal  (inc %1)
                                              :flag (= (inc %1) 1)
                                              :pf_name (format "%s_%s_i.html" page_stem (inc %1))) content-recs)
-        ;; dcc("dcc_start_outer", "page_fk", ["item_ordinal < 2"], []);
-        ;; dcc_start_outer (filter :flag content-ordinal)
-        ;; dcc("dcc_start_inner", "con_pk", ["item_ordinal < 2"], ["item_ordinal,an"]);
         start_inner (filter :flag content-ordinal)
-        ;; dcc("dcc_remainder", "con_pk", ["item_ordinal >= 2"], ["item_ordinal,an"]);
         remainder (vec (remove :flag content-ordinal))
 
         full-site-path (format "%s/%s" (:export-path @config) (:site_path page-rec))
         full_page_name (format "%s/%s" full-site-path (:page_name page-rec))
-        ;;     $path_exists = test_path($site_path);
         ready-data (assoc page-rec
                           :nav nav
                           :page_stem page_stem
@@ -319,7 +326,7 @@
                           :content-ordinal content-ordinal
                           :start_inner start_inner
                           :remainder remainder)
-        html-fragment (clostache/render (slurp "html/main_t.html")
+        html-fragment (my-render (slurp "html/main_t.html")
                                         ready-data)]
     (spit full_page_name html-fragment)
     (gen_image_pages ready-data)
@@ -350,7 +357,7 @@
 
 
 (defn edit_new_page []
-  (let [html-result (clostache/render (slurp "html/edit_page.html")
+  (let [html-result (my-render (slurp "html/edit_page.html")
                                       {:d_state "edit_new_page"
                                        :menu ""
                                        :page_title ""
@@ -371,7 +378,7 @@
   (gen_single_page (:page_pk @params) (menu_gen (:site_name @params))))
 
 (defn delete_page []
-  (println "fn delete_page does nothing.")
+  (println "fn delete_page does nothing yet.")
   )
 
 (defn get_wh [full_name]

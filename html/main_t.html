@@ -12,7 +12,6 @@
       {{&menu_text}}
       <hr>
       <div class="entry">
-	<!-- {c $start_outer start &lt;div -2 stop &lt;/div&gt; +2 } -->
         {{#start_inner}}
         <a href="{{pf_name}}" id="{{ordinal}}">
           <img src="images/{{image_dir}}/{{s_name}}"
@@ -24,16 +23,12 @@
                vspace="0"
                hspace="10">
         </a>
-        {{description}}
-	<!-- {c $start_inner start &lt;a -2 stop &lt;/div +1} -->
+        {{&description}}
 	<br clear="all">
         {{/start_inner}}
       </div>
-      
       {{#remainder}}
       <div class="entry">
-        <!-- {c $remainder start &lt;div -2 stop &lt;/div&gt; +2 } -->
-        <!-- ordinal {{ordinal}} item_order {{item_order}} -->
           <a href="{{pf_name}}" id="{{ordinal}}">
             <img src="images/{{image_dir}}/{{s_name}}"
                width="{{s_width}}"
@@ -44,7 +39,7 @@
                vspace="0"
                hspace="10">
         </a>
-        {{description}}
+        {{&description}}
 	<br clear="all">
       </div>
       {{/remainder}}
