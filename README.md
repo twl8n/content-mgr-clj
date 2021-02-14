@@ -19,6 +19,9 @@ You need a sqlite database named cmgr.db.
 
 #### todo
 
+- 2021-02-13 move nav.html out of the git repo, and make it some kind of site-agnostic feature.
+  It probably needs to exist in the export directory.
+
 ? 2021-02-11 image scale in auto_gen needs to deal with both horizontal and vertical images. 
   image_t.html probably also needs work to support horizontal and vertical images.
 
@@ -26,7 +29,7 @@ You need a sqlite database named cmgr.db.
   jpegtopnm < foo.jpeg -dumpexif -exif=tmp.exif > tmp.pnm
   pnmtojpeg < tmp.pnm > tmp.jpg
 
-+ 2021-02-11 fix item_order in auto_gen to sort the items by their numerical image suffix, and then determine ordinals.
+fixed 2021-02-11 fix item_order in auto_gen to sort the items by their numerical image suffix, and then determine ordinals.
   We don't want IMG_1142.JPG to result in the item_order being 1142.0.
 
 - 2021-02-11 Consider adding the top menu to image_t.html aka the big image pages.
