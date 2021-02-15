@@ -293,7 +293,7 @@
 
 
 (defn gen_single_page [page_pk menu_text]
-  (let [nav (slurp "html/nav.html")
+  (let [nav (slurp (format "%s/nav.html" (:export-path @config)))
         page-rec (jdbc/execute-one!
                   ds-opts
                   ["select

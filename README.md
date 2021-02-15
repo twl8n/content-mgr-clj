@@ -19,7 +19,7 @@ You need a sqlite database named cmgr.db.
 
 #### todo
 
-- 2021-02-13 move nav.html out of the git repo, and make it some kind of site-agnostic feature.
++ 2021-02-13 move nav.html out of the git repo, and make it some kind of site-agnostic feature.
   It probably needs to exist in the export directory.
 
 ? 2021-02-11 image scale in auto_gen needs to deal with both horizontal and vertical images. 
