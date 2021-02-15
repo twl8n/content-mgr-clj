@@ -50,7 +50,9 @@ The app's forms are all POST, so this doesn't make sense for that. It might make
 
 - 2021-02-08 Var owner and field page.owner is unused. Clean up.
 
-- 2021-02-08 HTML param ginfo unused. Clean up.
+(fixed) 2021-02-15 expunge findme* ginfo and search
+
+(fixed) 2021-02-08 HTML param ginfo unused. Clean up.
 
 fixed 2021-02-11 menu_gen breaks if there is only a single menu item
 

@@ -14,10 +14,7 @@
           <td bgcolor="#99cccc" valign="top">
             <div align="center">
               <form action="./cmgr" method="post">
-                <input name="findme" value="{{findme_encoded}}" size="50" type="text">
                 <input name="d_state" value="page_search" type="hidden">
-                <input name="ginfo" value="content_manager,twl" type="hidden">
-                <input name="Submit" value="Search Sites" type="submit"><br>
                 <div style="text-align: left;">
                   <input name="insert" value="Insert New Page (new site)" type="submit">
                 </div>
@@ -27,14 +24,13 @@
         </tr>
       </tbody>
     </table>
-    <table border="0" cellpadding="3" cellspacing="0" width="800">
+    <table border="1" cellpadding="0" cellspacing="0" width="800">
       <tbody>
-        {{#dcc_site}} <!-- {c $dcc_site start &lt;tr -2 stop /tr&gt; +4} -->
+        {{#dcc_site}}
         <tr>
-          <td colspan="2" bgcolor="#eeeeee"> 
-            <form action="./cmgr" method="post">
+          <td colspan="2" style="background-color: #eeeeee; vertical-align: bottom; padding-top: 16px;"> 
+            <form action="./cmgr" method="post" style="margin-bottom: 0px;">
               <input name="d_state" value="page_search" type="hidden">
-              <input name="ginfo" value="content_manager,twl" type="hidden">
               <input name="site_name" value="{{site_name}}" type="hidden">
               Site name: {{site_name}}
               <input name="insert" value="Insert New Page" type="submit">
@@ -42,15 +38,13 @@
             </form>
           </td>
         </tr>
-        {{#dcc_page}} <!-- {c $dcc_page start &lt;tr -2 stop /tr&gt; +2 } -->
+        {{#dcc_page}}
         <tr>
           <td width="10%">
             <nobr>{{menu}} ({{page_order}})</nobr></td>
           <td width="90%">
-            <form action="./cmgr" method="post">
+            <form action="./cmgr" method="post" style="margin-bottom: 0px;">
               <input name="d_state" value="page_search" type="hidden">
-              <input name="findme"  value="{{findme_encoded}}" type="hidden">
-              <input name="ginfo" value="content_manager,twl" type="hidden">
               <input name="page_pk" value="{{page_pk}}" type="hidden">
               <div align="justify">
                 <input name="item" value="Edit content" type="submit">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;

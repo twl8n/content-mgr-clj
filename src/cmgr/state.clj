@@ -388,8 +388,7 @@
 
 (comment
   (cmgr.core/init-config)
-  (do (reset! params {:findme ""
-                      :d_state :item_search
+  (do (reset! params {:d_state :item_search
                       :page_pk 4288
                       :auto_gen "Auto Gen Items"})
       (auto_gen))
