@@ -88,36 +88,27 @@
 (defn init-config []
   (cmgr.state/set-config {:export-path export-path}))
 
+;; Be specific that we only do dynamic requests to the /cmgr endpoint.
+;; Anything else is a 404 here, and wrap-file will try to load static content aka a file.
 (defn handler
   [request]
-  (cmgr.state/set-config {:export-path export-path})
-  (let [temp-params (as-> request yy
-                      (:form-params yy) ;; We only support POST requests now.
-                      (reduce-kv #(assoc %1 (keyword %2) (clojure.string/trim %3))  {} yy)
-                      (assoc yy
-                             :d_state (keyword (:d_state yy))))]
-    (cmgr.state/set-params temp-params)
-    ;; (println "request:")
-    ;; (pp/pprint request)
-    ;; (pp/pprint (str "@params: " @cmgr.state/params))
-    (traverse (or (:d_state temp-params) :page_search))
-    {:status 200
-     :headers {"Content-Type" "text/html"}
-     :body @cmgr.state/html-out}))
+  (if (not= "/cmgr" (:uri request))
+    ;; calling code in ring.middleware.file expects a status 404 when the handler doesn't have an answer.
+    {:status 404 :body (format "Unknown request %.40s ..." (:uri request))}
+    (let [temp-params (as-> request yy
+                        (:form-params yy) ;; We only support POST requests now.
+                        (reduce-kv #(assoc %1 (keyword %2) (clojure.string/trim %3))  {} yy)
+                        (assoc yy
+                               :d_state (keyword (:d_state yy))))]
+      (cmgr.state/set-params temp-params)
+      ;; (println "request:")
+      ;; (pp/pprint request)
+      ;; (pp/pprint (str "@params: " @cmgr.state/params))
+      (traverse (or (:d_state temp-params) :page_search))
+      {:status 200
+       :headers {"Content-Type" "text/html"}
+       :body @cmgr.state/html-out})))
 
-(comment
-  (let [request {:params {"d_state" "page_search"
-                          "findme" "foo"
-                          "ginfo" "content_manager,twl"
-                          "page_pk" "2030"
-                          "item" "Edit content"}}
-        tp (as-> request yy
-             (:params yy)
-             (reduce-kv #(assoc %1 (keyword %2) (clojure.string/trim %3))  {} yy)
-            (assoc yy :d_state (keyword (:d_state yy)))
-            )]
-  tp)
-  )
 
 ;; 2021-02-13 if you wanted ring to serve the resulting static html, you would probably need something like
 ;; this to handle making index.html the default. Probably add it after the other handlers.
@@ -128,9 +119,15 @@
      (update-in req [:uri]
                 #(if (= "/" %) "/index.html" %)))))
 
+;; Deep inside ring.middleware.file, if file-request can't find a file, it returns a nil response map.
+;; I really think it should return a 404, since a missing file isn't generally considered a hard fail.
+
+;; The handler is basically a callback that the wrappers may choose to run. Assuming the wrappers call the handler, the wrappers
+;; can modify the request before passing it to the handler, and/or modify the response from the handler.
 (def app
   (-> handler
-      (wrap-file export-path {:allow-symlinks? true})
+      (wrap-file export-path {:allow-symlinks? true
+                              :prefer-handler? true})
       (wrap-multipart-params)
       (wrap-params)))
 
@@ -157,9 +154,7 @@
   (printf "args: %s\n" args)
   ;; Workaround for the namespace changing to "user" after compile and before -main is invoked
   (in-ns true-ns)
-
+  (cmgr.state/set-config {:export-path export-path})
   (ds)
   (prn "server: " server)
-  (.start server)
-  
-  )
+  (.start server))

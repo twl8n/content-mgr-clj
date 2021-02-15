@@ -13,7 +13,7 @@
         <tr>
           <td bgcolor="#99cccc" valign="top">
             <div align="center">
-              <form action="" method="post">
+              <form action="./cmgr" method="post">
                 <input name="findme" value="{{findme_encoded}}" size="50" type="text">
                 <input name="d_state" value="page_search" type="hidden">
                 <input name="ginfo" value="content_manager,twl" type="hidden">
@@ -32,7 +32,7 @@
         {{#dcc_site}} <!-- {c $dcc_site start &lt;tr -2 stop /tr&gt; +4} -->
         <tr>
           <td colspan="2" bgcolor="#eeeeee"> 
-            <form action="" method="post">
+            <form action="./cmgr" method="post">
               <input name="d_state" value="page_search" type="hidden">
               <input name="ginfo" value="content_manager,twl" type="hidden">
               <input name="site_name" value="{{site_name}}" type="hidden">
@@ -47,7 +47,7 @@
           <td width="10%">
             <nobr>{{menu}} ({{page_order}})</nobr></td>
           <td width="90%">
-            <form action="" method="post">
+            <form action="./cmgr" method="post">
               <input name="d_state" value="page_search" type="hidden">
               <input name="findme"  value="{{findme_encoded}}" type="hidden">
               <input name="ginfo" value="content_manager,twl" type="hidden">
@@ -55,7 +55,6 @@
               <div align="justify">
                 <input name="item" value="Edit content" type="submit">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                 <input name="edit" value="Edit page" type="submit">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                <input name="submit" value="Disable page" type="submit">
               </div>
             </form>
           </td>

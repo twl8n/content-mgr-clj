@@ -1,4 +1,20 @@
 
+
+(comment
+  (let [request {:params {"d_state" "page_search"
+                          "findme" "foo"
+                          "ginfo" "content_manager,twl"
+                          "page_pk" "2030"
+                          "item" "Edit content"}}
+        tp (as-> request yy
+             (:params yy)
+             (reduce-kv #(assoc %1 (keyword %2) (clojure.string/trim %3))  {} yy)
+            (assoc yy :d_state (keyword (:d_state yy)))
+            )]
+  tp)
+  )
+
+
 ;; run!
 ;; (reduce #(proc %2) nil coll)
 ;; run! with index
