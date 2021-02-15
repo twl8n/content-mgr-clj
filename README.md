@@ -8,7 +8,7 @@ This app is not complete, and only partiallly working. It is being ported from a
 
 `clojure -m cmgr.core`
 
-In a web browser go to: http://localhost:8080/
+In a web browser go to: http://localhost:8080/cmgr
 
 #### Requirements
 
