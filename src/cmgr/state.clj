@@ -15,12 +15,15 @@
    (clostache/render template data)
    #"[\\]{1}(.)" "$1"))
 
+;; System wide config.
 (def config (atom {}))
 
 ;; This won't work until cmgr.core has finished compiling.
-(when (resolve 'cmgr.core/init-config) ((eval (resolve 'cmgr.core/init-config))))
+(when (resolve 'cmgr.core/read-config) (set-config ((eval (resolve 'cmgr.core/init-config)))))
 
-(defn set-config [new-config]
+(defn set-config
+  "Arg is a map. We need :export-path"
+  [new-config]
   (reset! config new-config))
   
 
@@ -129,21 +132,6 @@
                                 {:page_pk (:page_pk @params)})]
     true))
 
-(defn next_content_page [] 
-  ;; do_sql_simple("hondavfr", "", "select con_pk from content where page_fk=\$page_pk and valid_content<>0 and item_order>\$item_order order by item_order asc limit 1");
-  ;; if ($con_pk)
-  ;; {
-  ;;     $edit = 1;
-  ;; }
-  ;; else
-  ;; {
-  ;;     $done = 1;
-  ;; }
-  (let [result-set (jdbc/execute-one!
-                    ds-opts
-                    ["select con_pk from content where page_fk=? 
-			and valid_content<>0 and item_order>? order by item_order asc limit 1" (:page_pk @params)])]))
-
 ;; item = photo+text
 ;; page = one or more items
 ;; item_search is a sort-of preview-ish list of all the items for a given page.
@@ -164,11 +152,6 @@
         html-result (my-render (slurp "html/item_search.html") ready-data)]
     (reset! html-out html-result)))
 
-;; Historically, we converted any 4 control characters (newlines) convert to <br><br> tags 
-;; when saving, and converted the other way when reading from the db and rendering in HTML.
-;; Bad idea. Just leave them as newlines and convert only when necessary for html, which is not in a <textarea> tag.
-;; (let [desc (str/replace (:description @params) #"([\000-\037]{4})" "<br><br>")]
-;;   (swap! params #(assoc % :description desc))
 
 ;; I think we aren't saving the other fields because they were fixed when the item was created, and cannot
 ;; be changed.
@@ -182,7 +165,7 @@
     true))
 
 
-;; 2021-02-08 This will re-edit the same item if there is no next, and that's a bit confusing.
+;; 2021-02-08 This will re-edit the same item if there is no next, and that's a tiny bit confusing.
 (defn next_item []
   (let [old_con_pk (:con_pk @params)
         result-set (jdbc/execute-one!
@@ -220,9 +203,10 @@
         html-result (my-render (slurp "html/edit_item.html") ready-data)]
     (reset! html-out html-result)))
 
-(defn menu_gen [site_name]
-  (let [;; site_name "hondavfr"
-        result-set (jdbc/execute!
+(defn menu_gen
+  "Given a site name, build the top menu for that site, returning an HTML fragment."
+  [site_name]
+  (let [result-set (jdbc/execute!
                     ds-opts
                     ["select page_pk as menu_page_pk,page_order,page_name,menu,site_path from page where
 			site_name=? and valid_page<>0 order by page_order" site_name])
@@ -234,15 +218,10 @@
         pb-set (mapv #(assoc % :page_break (mod (:ordinal %) number-of-lines)) ordinal-set)
         ready-data (assoc {} :menu_line (mapv (fn [xx] {:first_col (val xx)}) (group-by :page_break pb-set)))
         ]
-    ;; returns an html fragment
     (my-render (slurp "html/menu_template.html") ready-data)))
 
-(comment
-  ;; page_pk 543 ;; hondavfr page with lots of images
-  (gen_single_page 543 (menu_gen "hondavfr"))
-  )
 
-;; Are these item pages or image pages? Ideally, we'd be consistent about the name.
+;; These are item pages, aka image pages. Ideally, we'd be consistent about the name.
 (defn gen_image_pages [ready-data]
   (doseq [page-data (:content-ordinal ready-data)] ;; :description \n changed to <br> in gen_single_page.
     (let [page_pk (:page_pk ready-data)
@@ -275,15 +254,6 @@
       (spit full_page_name html-fragment)
       )))
 
-
-;; A "site" is all the pages with the same site_name.
-(comment
-  (cmgr.core/init-config)
-  (do (reset! params {:site_name "hondavfr"})
-      (site_gen)
-      (reset! params {:site_name "hondavlx"})
-      (site_gen))
-  )
 
 ;; This is especially for :description, but might be necessary for other text that has HTML line breaks.
 ;; Eventually, we might need to support other embedded HTML (or not).
@@ -332,6 +302,7 @@
     (gen_image_pages ready-data)
     ))
 
+
 (defn site_gen []
   (let [site_name (:site_name @params)
         result-set (jdbc/execute!
@@ -349,7 +320,12 @@
         image_dir (:image_dir @params)
         export-path (:export-path @config)]
     (.mkdirs (io/file (format "%s/%s/images/%s" export-path site_path image_dir)))
-    (sql/insert! ds-opts :page (select-keys @params [:menu :page_title :body_title :page_name :search_string :image_dir :site_name :site_path :page_order :valid_page :external_url]))))
+    (sql/insert! ds-opts :page
+                 (select-keys
+                  @params
+                  [:menu :page_title :body_title :page_name
+                   :search_string :image_dir :site_name :site_path
+                   :page_order :valid_page :external_url]))))
 
 
 (defn clear_continue []
@@ -386,16 +362,7 @@
                                       (:out (shell/sh "sh" "-c" (format "jpegtopnm < %s| pnmfile -size" full_name))))]
     [(Integer. width) (Integer. height)]))
 
-(comment
-  (cmgr.core/init-config)
-  (do (reset! params {:d_state :item_search
-                      :page_pk 4288
-                      :auto_gen "Auto Gen Items"})
-      (auto_gen))
-  )
 
-;; the old, doseq item_order that was literally the file numerical suffix.
-;; item_order (Integer. (str/replace full_name #"(?i).*\/.*_(\d+).jp.*g" "$1"))
 (defn gen-core
   "Do side effects, return (inc item_order)"
   [pdata short_name item_order]
@@ -428,7 +395,11 @@
       (sql/insert! ds-opts :content insert-data)))
   (inc item_order))
 
-;; Create a file-list that only contains good jpeg files, in order of their numeric suffix.
+
+;; Create a file-list that only contains good jpeg files, in order of their numeric suffix. Send that list to
+;; gen-core to resize images, gather necessary bookkeeping data, and insert a content item into the db for each
+;; image.
+
 (defn auto_gen []
   (let [page_pk (:page_pk @params)
         {:keys [site_path image_dir]} (jdbc/execute-one!

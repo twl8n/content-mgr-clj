@@ -9,8 +9,15 @@
             [ring.middleware.multipart-params :refer [wrap-multipart-params]])
   (:gen-class))
 
-;; Used here to serve static content, and used in cmgr.state to know where to export the generated web pages.
-(def export-path (str(System/getenv "HOME") "/Sites/content-manager-pages"))
+(defn read-config
+  "Read .cmgr in the user's home dir. Strip comments and blank lines."
+  []
+  (into {} conj
+        (map (fn [xx] (let [[kstr vstr] (str/split xx #"\s+")] {(keyword kstr) vstr}))
+             (remove #(re-matches #"^\s*;;.*|^\s*$" %)
+                     (re-seq #"(?m)^.*$"
+                             (slurp (str(System/getenv "HOME") "/.cmgr")))))))
+
 
 ;; Workaround for the namespace changing to "user" after compile and before -main is invoked
 (def true-ns (ns-name *ns*))
@@ -33,14 +40,16 @@
 ;; 2021-01-26 Prompt user for any if- functions, but simply run the other functions which should all return false.
 ;; If they return false, why do we run them??
 
-;; Functions have two string-ish name formats:
+;; Functions in clojure have two string-ish name formats:
 ;; #function[machine.core/if-logged-in]
 ;; "machine.core$if_logged_in@5df2f577"
 ;; The regex to identify an "if-" function varies depending on type of fn-name.
 ;; (re-find #"\$if_" (str fn-name))
 ;; (re-find #"/if-" (str fn-name))
 
-(defn user-input [fn-name]
+(defn user-input
+  "Utility function for mocking up state machine execution with user input for the if- state tests."
+  [fn-name]
   (printf "user-input fn-name: %s\n" fn-name)
   (cond (= fn-name (resolve 'fntrue)) (do (printf "Have fntrue, returning true.\n") (cmgr.state/fntrue))
         (= fn-name (resolve 'fnfalse)) (do (printf "Have fnfalse, returning false.\n" (cmgr.state/fnfalse)))
@@ -59,6 +68,7 @@
 ;; Loop through tests (nth curr 0) while tests are false, until hitting wait.
 ;; Stop looping  if test is true, and change to the next-state-edge (nth curr 2).
 (defn traverse-debug
+  "Use this version of traverse with user-input above for testing."
   [state]
   ;; (printf "state=%s\n" state)
   (if (nil? state)
@@ -79,14 +89,11 @@
     nil
     (loop [tt (state cmgr.state/table)]
       (let [curr (first tt)
-            ;; _ (prn (nth curr 0))
             test-result ((nth curr 0))]
         (cond (and test-result (some? (nth curr 1))) (traverse (nth curr 1))
               (seq (rest tt)) (recur (rest tt))
               :else nil)))))
 
-(defn init-config []
-  (cmgr.state/set-config {:export-path export-path}))
 
 ;; Be specific that we only do dynamic requests to the /cmgr endpoint.
 ;; Anything else is a 404 here, and wrap-file will try to load static content aka a file.
@@ -101,25 +108,13 @@
                         (assoc yy
                                :d_state (keyword (:d_state yy))))]
       (cmgr.state/set-params temp-params)
-      ;; (println "request:")
-      ;; (pp/pprint request)
-      ;; (pp/pprint (str "@params: " @cmgr.state/params))
       (traverse (or (:d_state temp-params) :page_search))
       {:status 200
        :headers {"Content-Type" "text/html"}
        :body @cmgr.state/html-out})))
 
 
-;; 2021-02-13 if you wanted ring to serve the resulting static html, you would probably need something like
-;; this to handle making index.html the default. Probably add it after the other handlers.
-;; We are not currently using ring to serve static pages created by the content manager.
-(defn wrap-dir-index [handler]
-  (fn [req]
-    (handler
-     (update-in req [:uri]
-                #(if (= "/" %) "/index.html" %)))))
-
-;; Deep inside ring.middleware.file, if file-request can't find a file, it returns a nil response map.
+;; Deep inside ring.middleware.file, if file-request can't find a file, it returns a nil response map which results in a 500 error.
 ;; I really think it should return a 404, since a missing file isn't generally considered a hard fail.
 
 ;; The handler is basically a callback that the wrappers may choose to run. Assuming the wrappers call the handler, the wrappers
@@ -131,17 +126,6 @@
       (wrap-multipart-params)
       (wrap-params)))
 
-;; http://localhost:8080/downhome/home/flowers_07_s.jpg
-;; /Users/twl/Sites/content-images/downhome/home/flowers_07_s.jpg
-
-;; Removed the intermediate images dir from source image directory path
-;; new: /Users/twl/Sites/content-images/downhome/home/flowers_07_s.jpg
-
-;; old edit_item.html http://localhost:8080/images/home/flowers_07_s.jpg
-;; old item_search.html: http://localhost:8080/downhome/images/home/flowers_07_s.jpg
-;; old: /Users/twl/src/content-mgr-clj/downhome/images/home/flowers_07_s.jpg
-
-;; (wrap-file your-handler "/var/www/public")
 
 ;; Unclear how defonce and lein ring server headless will play together.
 (defn ds []
@@ -154,7 +138,7 @@
   (printf "args: %s\n" args)
   ;; Workaround for the namespace changing to "user" after compile and before -main is invoked
   (in-ns true-ns)
-  (cmgr.state/set-config {:export-path export-path})
+  (cmgr.state/set-config (read-config))
   (ds)
   (prn "server: " server)
   (.start server))

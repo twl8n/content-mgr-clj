@@ -1,5 +1,53 @@
 
 
+;; A "site" is all the pages with the same site_name.
+(comment
+  (cmgr.core/init-config)
+  (do (reset! params {:site_name "hondavfr"})
+      (site_gen)
+      (reset! params {:site_name "hondavlx"})
+      (site_gen))
+  )
+
+
+;; Historically, we converted any 4 control characters (newlines) convert to <br><br> tags 
+;; when saving, and converted the other way when reading from the db and rendering in HTML.
+;; Bad idea. Just leave them as newlines and convert only when necessary for html, which is not in a <textarea> tag.
+;; (let [desc (str/replace (:description @params) #"([\000-\037]{4})" "<br><br>")]
+;;   (swap! params #(assoc % :description desc))
+
+
+
+(defn next_content_page [] 
+  ;; do_sql_simple("hondavfr", "", "select con_pk from content where page_fk=\$page_pk and valid_content<>0 and item_order>\$item_order order by item_order asc limit 1");
+  ;; if ($con_pk)
+  ;; {
+  ;;     $edit = 1;
+  ;; }
+  ;; else
+  ;; {
+  ;;     $done = 1;
+  ;; }
+  (let [result-set (jdbc/execute-one!
+                    ds-opts
+                    ["select con_pk from content where page_fk=? 
+			and valid_content<>0 and item_order>? order by item_order asc limit 1" (:page_pk @params)])]))
+
+
+;; 2021-02-13 if you wanted ring to serve the resulting static html, you would probably need something like
+;; this to handle making index.html the default. Probably add it after the other handlers.
+;; We are not currently using ring to serve static pages created by the content manager.
+(defn wrap-dir-index [handler]
+  (fn [req]
+    (handler
+     (update-in req [:uri]
+                #(if (= "/" %) "/index.html" %)))))
+
+
+;; Used here to serve static content, and used in cmgr.state to know where to export the generated web pages.
+(def export-path (str(System/getenv "HOME") "/Sites/content-manager-pages"))
+
+
 (comment
   (let [request {:params {"d_state" "page_search"
                           "findme" "foo"
