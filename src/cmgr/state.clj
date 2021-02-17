@@ -416,7 +416,9 @@
   ;; This sort of describes the map of lists of lists that is the state table.
   {:starting-default-state
    [[#(if-arg :some-key) :other-state]
-    [side-effect-fn-a nil]]
+    [fn-symbol nil]]
+   [[#(if-arg :some-other-key other-fn-symbol) nil]
+    [fn-symbol nil]]
    :other-state
    [[site-effect-fn-b nil]
     [render-html-change-state nil]]}
@@ -450,12 +452,8 @@
 
    :item_search
    [[#(if-arg :edit) :edit_item]
-    [#(if-arg :page_gen) :page_gen]
-    [#(if-arg :auto_gen) :auto_gen]
-    [item_search nil]]
-
-   :page_gen
-   [[page_gen nil]
+    [#(if-arg :page_gen page_gen) nil]
+    [#(if-arg :auto_gen auto_gen) nil]
     [item_search nil]]
 
    :edit_item
@@ -495,8 +493,5 @@
    :delete_page
    [[delete_page nil]
     [page_search nil]]
-
-   :auto_gen
-   [[auto_gen :item_search]]
    })
 
