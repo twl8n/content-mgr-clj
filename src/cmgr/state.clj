@@ -16,16 +16,15 @@
    #"[\\]{1}(.)" "$1"))
 
 ;; System wide config.
-(def config (atom {}))
-
-;; This won't work until cmgr.core has finished compiling.
-(when (resolve 'cmgr.core/read-config) (set-config ((eval (resolve 'cmgr.core/init-config)))))
+(def config (atom {:export-path (System/getenv "HOME")}))
 
 (defn set-config
   "Arg is a map. We need :export-path"
   [new-config]
   (reset! config new-config))
-  
+
+;; This won't work until cmgr.core has finished compiling.
+(when (resolve 'cmgr.core/init-config) (set-config ((eval (resolve 'cmgr.core/init-config)))))
 
 (def html-out (atom ""))
 
@@ -69,30 +68,21 @@
 (defn wait [] (msg "running wait, returning false") true) ;; return true because wait ends looping over tests
 (defn noop [] (printf "running noop\n"))
 
-;; Due to the nature of HTML submit inputs, we have both a key and a value.
-;; Really, if the key exists we are in the edit state, so lets just check that we have a key and a non-empty string value.
-(defn if-edit []
-  (let [tval (:edit @params)
-        ret (and (seq tval) tval)]
-    (swap! params #(dissoc % :edit))
-    (boolean ret)))
 
-;; (if-arg :item)
-(defn if-arg [tkey]
-  (let [tval (tkey @params)
-        ret (and (seq tval) tval)]
-    (swap! params #(dissoc % tkey))
-    (boolean ret)))
+;; (if-arg :item) Do not clear state after testing it, even if it might prevent infinite loops. The wrongness
+;; of clearing state can be seen by the wrongness of resetting :logged-in. Infinite loops need to be addressed
+;; by proper design and good logic.
+(defn if-arg
+  ([tkey]
+   (if-arg tkey nil))
+  ([tkey side-effect]
+   (if (:test-mode @app-state)
+     tkey
+     (let [tval (tkey @params)
+           ret (and (seq tval) tval)]
+       (when (and ret side-effect) (side-effect))
+       ret))))
 
-(defn if-save []
-  (let [ret (= "Save" (:save @params))]
-    (swap! params #(dissoc % :save))
-    ret))
-
-(defn if-continue []
-  (let [ret (= "Save & Continue" (:continue @params))]
-    (swap! params #(dissoc % :continue))
-    ret))
         
 (defn page_search []
   (let [result-set (jdbc/execute! ds-opts ["select * from page where valid_page=1 order by site_name,page_order"])
@@ -425,7 +415,7 @@
 (comment
   ;; This sort of describes the map of lists of lists that is the state table.
   {:starting-default-state
-   [[if-test :other-state]
+   [[#(if-arg :some-key) :other-state]
     [side-effect-fn-a nil]]
    :other-state
    [[site-effect-fn-b nil]
@@ -434,7 +424,7 @@
 
 (def table
   {:page_search
-   [[if-edit :edit_page]
+   [[#(if-arg :edit) :edit_page]
     [#(if-arg :delete) :ask_delete_page]
     [#(if-arg :insert) :edit_new_page]
     [#(if-arg :item) :item_search]
@@ -446,8 +436,8 @@
     [page_search nil]]
 
    :edit_page
-   [[if-save :save_page]
-    [if-continue :save_page_continue]
+   [[#(if-arg :save) :save_page]
+    [#(if-arg :continue) :save_page_continue]
     [edit_page nil]]
 
    :save_page
@@ -459,7 +449,7 @@
     [edit_page nil]]
 
    :item_search
-   [[if-edit :edit_item]
+   [[#(if-arg :edit) :edit_item]
     [#(if-arg :page_gen) :page_gen]
     [#(if-arg :auto_gen) :auto_gen]
     [item_search nil]]
@@ -469,8 +459,8 @@
     [item_search nil]]
 
    :edit_item
-   [[if-save :save_item]
-    [if-continue :save_item_continue]
+   [[#(if-arg :save) :save_item]
+    [#(if-arg :continue) :save_item_continue]
     [#(if-arg :next) :edit_next]
     [edit_item nil]]
 
@@ -488,8 +478,8 @@
     [edit_item nil]]
 
    :edit_new_page
-   [[if-save :insert_page]
-    [if-continue :insert_continue]
+   [[#(if-arg :save) :insert_page]
+    [#(if-arg :continue) :insert_continue]
     [edit_new_page nil]]
    
    :insert_page
@@ -501,8 +491,6 @@
    :ask_del_page
    [[#(if-arg :confirm) :delete_page]
     [page_search nil]]
-   ;; 0	ask_del_page	$confirm  delete_page()	  page_search
-   ;; 1	ask_del_page	$true	  ask_del_page()  wait
 
    :delete_page
    [[delete_page nil]
