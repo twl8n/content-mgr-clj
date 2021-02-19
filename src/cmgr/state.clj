@@ -1,5 +1,6 @@
 (ns cmgr.state
   (:require [clojure.string :as str]
+            [clojure.set]
             [clojure.java.io :as io]
             [clojure.java.shell :as shell]
             [next.jdbc :as jdbc]
@@ -406,6 +407,62 @@
     (reduce #(gen-core page-data %2 %1) 1 file-list)))
         
 
+(defn verify-table [table]
+  (let [states (set (keys table))
+        next-states (set (filter keyword? (flatten (vals table))))]
+    (if (= next-states states)
+      (format "All defined/called match.\n")
+      (if (clojure.set/subset? next-states states)
+        {:msg (format "Edges that are never called: %s\n" (str/join " " (clojure.set/difference states next-states)))
+         :fatal false}
+        {:msg (format "Undefined edges: %s\n" (str/join " " (clojure.set/difference next-states states)))
+         :fatal true}
+        ))))
+
+(defn check-table [table]
+  (let [arity-problems (filter #(not= 2 (count %)) (mapcat identity (vals table)))]
+    (when (some? arity-problems)
+      (doseq [edge arity-problems]
+        (printf "Expecting 2 elements in edge: %s\n" edge)))))
+
+(def limit-check (atom 0))
+(def ^:dynamic limit-max 17)
+
+;; This is not accurate and will report false positive infinite loops. See the machine git repo.
+(defn traverse-all
+  [state table]
+  (printf "state=%s\n" state)(flush)
+  (if (nil? state)
+    nil
+    (loop [tt (state table)]
+      (swap! limit-check inc)
+      (let [curr (first tt)
+            ;; test-result ((nth curr 0))
+            ]
+        ;; Assume true, but when we return, continue as though the test was false.
+        ;; Default to nil from (nth curr 1) in case there aren't 2 elements. We require 2 elements,
+        ;; but that test should be discovered by other code. 
+        (when (some? (nth curr 1 nil))
+          (do
+            (prn "new state: " (nth curr 1))
+            (traverse-all (nth curr 1) table)
+            (print (format "returning to state: %s\n" curr))))
+        (if (and (< @limit-check limit-max) (seq (rest tt)))
+          (do 
+            (printf "lc: %s and: %s\n" @limit-check (and (< @limit-check 15) (seq (rest tt))))
+            (flush)
+            (recur (rest tt)))
+          (do
+            (when (>= @limit-check limit-max) (printf "Stopping at limit-check %s. Infinite loop?\n" @limit-check))
+            nil))))))
+
+(comment
+  (verify-table table)
+  (check-table table)
+  (do (reset! limit-check 0)
+      (binding [limit-max 100]
+        (traverse-all :page_search table)))
+  )
 
 ;; Default is page_search.
 ;; This is a less than ideal state table because we retain the d_state (e.g. :page_search) between invocations.
@@ -416,8 +473,8 @@
   ;; This sort of describes the map of lists of lists that is the state table.
   {:starting-default-state
    [[#(if-arg :some-key) :other-state]
-    [fn-symbol nil]]
-   [[#(if-arg :some-other-key other-fn-symbol) nil]
+    [fn-symbol nil]
+    [#(if-arg :some-other-key other-fn-symbol) nil]
     [fn-symbol nil]]
    :other-state
    [[site-effect-fn-b nil]
@@ -475,6 +532,7 @@
    [[save_item nil]
     [edit_item nil]]
 
+   ;; This could be better by calling functions, and not doing state transitions?
    :edit_new_page
    [[#(if-arg :save) :insert_page]
     [#(if-arg :continue) :insert_continue]
@@ -482,11 +540,12 @@
    
    :insert_page
    [[insert_page :page_search]]
+
    :insert_continue
    [[insert_page nil]
     [clear_continue :edit_page]]
 
-   :ask_del_page
+   :ask_delete_page
    [[#(if-arg :confirm) :delete_page]
     [page_search nil]]
 
