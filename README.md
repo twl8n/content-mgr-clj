@@ -25,14 +25,11 @@ You need a sqlite database named cmgr.db.
 
 - 2021-02-11 Consider adding the top menu to image_t.html aka the big image pages.
 
-- Most (all?) pages with save and save & continue also need "cancel".
+- 2021-02-19 Most (all?) pages with save and save & continue also need "cancel".
 
 - 2021-02-05 Is it really a good idea to conflate "if-" functions and side-effecty functions in the state table?
   It is working, but investigate if the table would be easier to read by adding back in a column for 
   side effecting functions that fire when the "if-" function is true.
-
-(no) 2021-02-05 Make the URL change to match the response. Especially when we're serving static content.
-The app's forms are all POST, so this doesn't make sense for that. It might make sense for static content. 
 
 - 2021-02-05 page.site_name and page.site_path are almost always the same. Force them to be the same, and then drop
   one of those fields. Probably keep site_name.
@@ -46,9 +43,15 @@ The app's forms are all POST, so this doesn't make sense for that. It might make
 - 2021-02-07 Move the database into the export directory so that there's nothing sensitive in the git repo
   that might be accidentally checked in.
   
-- 2021-02-07 Improve the default export directory config, maybe with a ~/.cmgr or ~/.app_config
-
 - 2021-02-08 Var owner and field page.owner is unused. Clean up.
+
+(done) 2021-02-07 Create an export directory config file ~/.cmgr
+
+(done) 2021-02-19 Add an optional third arg to state table first column. Allow if-arg tests to run an anonymous function.
+
+(no) 2021-02-05 Make the URL change to match the response. Especially when we're serving static content.
+The app's forms are all POST, so this doesn't make sense for that. It might make sense for static content. 
+
 
 (fixed) 2021-02-15 expunge findme* ginfo and search
 
