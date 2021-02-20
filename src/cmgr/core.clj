@@ -84,9 +84,9 @@
             (recur (rest tt))
             nil))))))
 
-
 ;; Be specific that we only do dynamic requests to the /cmgr endpoint.
 ;; Anything else is a 404 here, and wrap-file will try to load static content aka a file.
+;; Frankly, it would have been easier to use slurp to load static content rather than ring's wrap-file.
 (defn handler
   [request]
   (if (not= "/cmgr" (:uri request))
@@ -106,6 +106,14 @@
 (defn get-conf [ckey]
   (ckey @cmgr.state/config))
 
+;; Note: wrap-file is not quite cooked. For the URL "http://host/foo" it returns the
+;; file "some-path/foo/index.html", the URI is not ".../" or ".../index.html" and all the relative links in
+;; the resulting page will be broken. Happily, we have very little need for static content. Just beware. When
+;; stuff can't load, it throws errors:
+
+;; 2021-02-19 20:21:44.408:WARN:oejs.HttpChannel:qtp1417854124-16: /images/piaa/IMG_2501_s.jpg
+;; java.lang.NullPointerException: Response map is nil
+
 ;; Deep inside ring.middleware.file, if file-request can't find a file, it returns a nil response map which results in a 500 error.
 ;; I really think it should return a 404, since a missing file isn't generally considered a hard fail.
 
@@ -117,9 +125,9 @@
 (defn make-app [& args]
   (-> handler
       (wrap-file (get-conf :export-path) {:allow-symlinks? true
-                                         :prefer-handler? true})
-                 (wrap-multipart-params)
-                 (wrap-params)))
+                                          :prefer-handler? true})
+      (wrap-multipart-params)
+      (wrap-params)))
 
 
 ;; Unclear how defonce and lein ring server headless will play together.
@@ -130,10 +138,10 @@
 (defn -main
   "Parse the states.dat file."
   [& args]
-  (printf "args: %s\n" args)
   ;; Workaround for the namespace changing to "user" after compile and before -main is invoked
   (in-ns true-ns)
   (cmgr.state/set-config (read-config))
+  (print (format "%s\n" @cmgr.state/config))
   (ds)
   (prn "server: " server)
   (.start server))

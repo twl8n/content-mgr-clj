@@ -428,7 +428,7 @@
 (def limit-check (atom 0))
 (def ^:dynamic limit-max 17)
 
-;; This is not accurate and will report false positive infinite loops. See the machine git repo.
+;; This is not entirely accurate and will report false positive infinite loops. See the machine git repo.
 (defn traverse-all
   [state table]
   (printf "state=%s\n" state)(flush)
@@ -436,12 +436,10 @@
     nil
     (loop [tt (state table)]
       (swap! limit-check inc)
-      (let [curr (first tt)
-            ;; test-result ((nth curr 0))
-            ]
-        ;; Assume true, but when we return, continue as though the test was false.
+      (let [curr (first tt)]
+        ;; Assume tests are true, but when we return, continue as though the test was false.
         ;; Default to nil from (nth curr 1) in case there aren't 2 elements. We require 2 elements,
-        ;; but that test should be discovered by other code. 
+        ;; but that requirement should be covered by other code. 
         (when (some? (nth curr 1 nil))
           (do
             (prn "new state: " (nth curr 1))
@@ -453,14 +451,16 @@
             (flush)
             (recur (rest tt)))
           (do
-            (when (>= @limit-check limit-max) (printf "Stopping at limit-check %s. Infinite loop?\n" @limit-check))
+            (if (>= @limit-check limit-max)
+              (printf "Stopping at limit-check %s. Infinite loop?\n" @limit-check)
+              (printf "Clean exit at limit-check %s. Apparently this machine halts.\n" @limit-check))
             nil))))))
 
 (comment
   (verify-table table)
   (check-table table)
   (do (reset! limit-check 0)
-      (binding [limit-max 100]
+      (binding [limit-max 50]
         (traverse-all :page_search table)))
   )
 
@@ -495,17 +495,9 @@
     [page_search nil]]
 
    :edit_page
-   [[#(if-arg :save) :save_page]
-    [#(if-arg :continue) :save_page_continue]
-    [edit_page nil]]
-
-   :save_page
-   [[save_page nil]
-    [page_search nil]]
-
-   :save_page_continue
-   [[save_page nil]
-    [edit_page nil]]
+   [[#(if-arg :save (fn [] (save_page) (page_search))) nil]
+    [#(if-arg :continue (fn [] (save_page) (edit_page))) nil]
+    [wait nil]]
 
    :item_search
    [[#(if-arg :edit) :edit_item]
@@ -532,19 +524,11 @@
    [[save_item nil]
     [edit_item nil]]
 
-   ;; This could be better by calling functions, and not doing state transitions?
    :edit_new_page
-   [[#(if-arg :save) :insert_page]
-    [#(if-arg :continue) :insert_continue]
+   [[#(if-arg :save (fn [xx] (insert_page) (page_search))) nil]
+    [#(if-arg :continue (fn [xx] (insert_page) (edit_page))) nil]
     [edit_new_page nil]]
    
-   :insert_page
-   [[insert_page :page_search]]
-
-   :insert_continue
-   [[insert_page nil]
-    [clear_continue :edit_page]]
-
    :ask_delete_page
    [[#(if-arg :confirm) :delete_page]
     [page_search nil]]
