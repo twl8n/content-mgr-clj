@@ -8,7 +8,7 @@
             [next.jdbc :as jdbc]
             [next.jdbc.sql :as sql]
             [next.jdbc.result-set :as rs]
-            [clostache.parser :as clostache] ;; [clostache.parser :refer [render]]
+            [clostache.parser :as clostache]
             [clojure.pprint :as pp]))
 
 ;; Work around a feature (or bug) in clostache that turns $ into \$ and \ into \\
@@ -26,7 +26,7 @@
   [new-config]
   (reset! config new-config))
 
-;; This won't work until cmgr.core has finished compiling.
+;; This won't work until cmgr.core has finished compiling, thus we use `resolve`.
 (when (resolve 'cmgr.core/init-config) (set-config ((eval (resolve 'cmgr.core/init-config)))))
 
 (def html-out (atom ""))
@@ -61,9 +61,7 @@
                           db-data
                           )
         html-result (my-render (slurp "html/page_search.html") ready-data)]
-    (reset! html-out html-result)
-    )
-  )
+    (reset! html-out html-result)))
 
 (defn edit_page []
   (let [result-set (jdbc/execute-one! ds-opts ["select * from page where page_pk=?" (:page_pk @params)])
@@ -158,6 +156,8 @@
         html-result (my-render (slurp "html/edit_item.html") ready-data)]
     (reset! html-out html-result)))
 
+;; Note 1: (see Note 1 below) Use quot to get an integer number of lines from a rounded-up float number of lines.
+;; Require at least desired-columns as a min that yields 1 line.
 (defn menu_gen
   "Given a site name, build the top menu for that site, returning an HTML fragment."
   [site_name]
@@ -167,12 +167,10 @@
 			site_name=? and valid_page<>0 order by page_order" site_name])
         ordinal-set (map-indexed #(assoc %2 :ordinal  %1) result-set)
         desired-columns 5.0
-        ;; Use quot to get an integer number of lines from a rounded-up float number of lines.
-        ;; Require at least desired-columns as a min that yields 1 line.
+        ;; See Note 1 above.
         number-of-lines (quot (+ 0.5 (/ (max desired-columns (count ordinal-set)) desired-columns)) 1)  ;; 3 for hondavfr
         pb-set (mapv #(assoc % :page_break (mod (:ordinal %) number-of-lines)) ordinal-set)
-        ready-data (assoc {} :menu_line (mapv (fn [xx] {:first_col (val xx)}) (group-by :page_break pb-set)))
-        ]
+        ready-data (assoc {} :menu_line (mapv (fn [xx] {:first_col (val xx)}) (group-by :page_break pb-set)))]
     (my-render (slurp "html/menu_template.html") ready-data)))
 
 
@@ -206,8 +204,7 @@
                                                   :next-name next-name
                                                   :prev prev_flag
                                                   :prev-name prev-name}))]
-      (spit full_page_name html-fragment)
-      )))
+      (spit full_page_name html-fragment))))
 
 
 ;; This is especially for :description, but might be necessary for other text that has HTML line breaks.
@@ -254,8 +251,7 @@
         html-fragment (my-render (slurp "html/main_t.html")
                                         ready-data)]
     (spit full_page_name html-fragment)
-    (gen_image_pages ready-data)
-    ))
+    (gen_image_pages ready-data)))
 
 
 (defn site_gen []
@@ -309,8 +305,7 @@
   (gen_single_page (:page_pk @params) (menu_gen (:site_name @params))))
 
 (defn delete_page []
-  (println "fn delete_page does nothing yet.")
-  )
+  (println "fn delete_page does nothing yet."))
 
 (defn get_wh [full_name]
   (let [[_ width height] (re-matches  #"(?s)(\d+)\s+(\d+).*"
@@ -370,12 +365,6 @@
     ;; Using reduce this way is like run! with an (ordinal) index
     (reduce #(gen-core page-data %2 %1) 1 file-list)))
 
-(comment
-  (machine.util/verify-table table)
-  (machine.util/check-table table)
-  (machine.util/check-infinite :page_search table)
-  )
-
 ;; Quick description of v5 state transition table format.
 (comment
   ;; This sort of describes the map of lists of lists that is the state table.
@@ -389,7 +378,13 @@
     [:true render-html-change-state nil]]}
   )
 
-;; Default is page_search. (How do you know that?)
+(comment
+  (machine.util/verify-table table)
+  (machine.util/check-table table)
+  (machine.util/check-infinite :page_search table)
+  )
+
+;; Default is page_search. (How do you know that? Hard coded in core.clj?)
 (def table
   {:page_search
    [[:edit nil :edit_page]

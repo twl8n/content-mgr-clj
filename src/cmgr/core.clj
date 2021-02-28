@@ -10,6 +10,8 @@
             [ring.middleware.params :refer [wrap-params]]
             [ring.middleware.multipart-params :refer [wrap-multipart-params]])
   (:gen-class))
+;; Workaround for the namespace changing to "user" after compile and before -main is invoked
+(def true-ns (ns-name *ns*))
 
 (defn read-config
   "Read .cmgr in the user's home dir. Strip comments and blank lines."
@@ -20,9 +22,6 @@
                      (re-seq #"(?m)^.*$"
                              (slurp (str(System/getenv "HOME") "/.cmgr")))))))
 
-
-;; Workaround for the namespace changing to "user" after compile and before -main is invoked
-(def true-ns (ns-name *ns*))
 
 ;; Be specific that we only do dynamic requests to the /cmgr endpoint.
 ;; Anything else is a 404 here, and wrap-file will try to load static content aka a file.
@@ -77,7 +76,6 @@
 ;; Unclear how defonce and lein ring server headless will play together.
 (defn ds []
   (defonce server (ringa/run-jetty (make-app) {:port 8080 :join? false})))
-
 
 (defn -main
   "Parse the states.dat file."

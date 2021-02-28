@@ -19,6 +19,8 @@ You need a sqlite database named cmgr.db.
 
 #### todo
 
+- 2021-02-27 Is machine.core a necessary requirement in core.clj? In state.clj?
+
 - 2021-02-12 Maybe strip all exif from jpeg images. Converting to pnm and back to jpeg should work.
   jpegtopnm < foo.jpeg -dumpexif -exif=tmp.exif > tmp.pnm
   pnmtojpeg < tmp.pnm > tmp.jpg
@@ -44,6 +46,9 @@ You need a sqlite database named cmgr.db.
   that might be accidentally checked in.
   
 - 2021-02-08 Var owner and field page.owner is unused. Clean up.
+
+(done) 2021-02-27 Use github.com/twl8n/machine as the state machine module. Remove all code that isn't part of
+the content manager from this repo.
 
 (done) 2021-02-07 Create an export directory config file ~/.cmgr
 
