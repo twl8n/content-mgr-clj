@@ -1,5 +1,7 @@
 (ns cmgr.state
   (:require [clojure.string :as str]
+            [machine.core]
+            [machine.util]
             [clojure.set]
             [clojure.java.io :as io]
             [clojure.java.shell :as shell]
@@ -47,44 +49,6 @@
 (defn set-params [xx]
   (reset! params xx))
   
-(def app-state (atom {}))
-
-(defn reset-state [] 
-  (swap! app-state (fn [foo] {})))
-
-(defn add-state [new-kw]
-  (swap! app-state #(apply assoc % [new-kw true])))
-
-(defn is-jump? [arg] false)
-
-(defn is-wait?
-  "(str (type arg)) is something like class machine.core$wait"
-  [arg] (= "$wait" (re-find #"\$wait" (str (type arg)))))
-
-(defn is-return? [arg] false)
-(defn jump-to [arg jstack] [arg (cons arg jstack)])
-
-(defn fntrue [] (msg "running fntrue") true)
-(defn fnfalse [] (msg "running fnfalse") false)
-(defn wait [] (msg "running wait, returning false") true) ;; return true because wait ends looping over tests
-(defn noop [] (printf "running noop\n"))
-
-
-;; (if-arg :item) Do not clear state after testing it, even if it might prevent infinite loops. The wrongness
-;; of clearing state can be seen by the wrongness of resetting :logged-in. Infinite loops need to be addressed
-;; by proper design and good logic.
-(defn if-arg
-  ([tkey]
-   (if-arg tkey nil))
-  ([tkey side-effect]
-   (if (:test-mode @app-state)
-     tkey
-     (let [tval (tkey @params)
-           ret (and (seq tval) tval)]
-       (when (and ret side-effect) (side-effect))
-       ret))))
-
-        
 (defn page_search []
   (let [result-set (jdbc/execute! ds-opts ["select * from page where valid_page=1 order by site_name,page_order"])
         db-data {:dcc_site (mapv (fn [xx] {:site_name (key xx)
@@ -405,136 +369,80 @@
         page-data {:page_pk page_pk :site_path site_path :image_dir image_dir}]
     ;; Using reduce this way is like run! with an (ordinal) index
     (reduce #(gen-core page-data %2 %1) 1 file-list)))
-        
-
-(defn verify-table [table]
-  (let [states (set (keys table))
-        next-states (set (filter keyword? (flatten (vals table))))]
-    (if (= next-states states)
-      (format "All defined/called match.\n")
-      (if (clojure.set/subset? next-states states)
-        {:msg (format "Edges that are never called: %s\n" (str/join " " (clojure.set/difference states next-states)))
-         :fatal false}
-        {:msg (format "Undefined edges: %s\n" (str/join " " (clojure.set/difference next-states states)))
-         :fatal true}
-        ))))
-
-(defn check-table [table]
-  (let [arity-problems (filter #(not= 2 (count %)) (mapcat identity (vals table)))]
-    (when (some? arity-problems)
-      (doseq [edge arity-problems]
-        (printf "Expecting 2 elements in edge: %s\n" edge)))))
-
-(def limit-check (atom 0))
-(def ^:dynamic limit-max 17)
-
-;; This is not entirely accurate and will report false positive infinite loops. See the machine git repo.
-(defn traverse-all
-  [state table]
-  (printf "state=%s\n" state)(flush)
-  (if (nil? state)
-    nil
-    (loop [tt (state table)]
-      (swap! limit-check inc)
-      (let [curr (first tt)]
-        ;; Assume tests are true, but when we return, continue as though the test was false.
-        ;; Default to nil from (nth curr 1) in case there aren't 2 elements. We require 2 elements,
-        ;; but that requirement should be covered by other code. 
-        (when (some? (nth curr 1 nil))
-          (do
-            (prn "new state: " (nth curr 1))
-            (traverse-all (nth curr 1) table)
-            (print (format "returning to state: %s\n" curr))))
-        (if (and (< @limit-check limit-max) (seq (rest tt)))
-          (do 
-            (printf "lc: %s and: %s\n" @limit-check (and (< @limit-check 15) (seq (rest tt))))
-            (flush)
-            (recur (rest tt)))
-          (do
-            (if (>= @limit-check limit-max)
-              (printf "Stopping at limit-check %s. Infinite loop?\n" @limit-check)
-              (printf "Clean exit at limit-check %s. Apparently this machine halts.\n" @limit-check))
-            nil))))))
 
 (comment
-  (verify-table table)
-  (check-table table)
-  (do (reset! limit-check 0)
-      (binding [limit-max 50]
-        (traverse-all :page_search table)))
+  (machine.util/verify-table table)
+  (machine.util/check-table table)
+  (machine.util/check-infinite :page_search table)
   )
 
-;; Default is page_search.
-;; This is a less than ideal state table because we retain the d_state (e.g. :page_search) between invocations.
-;; We should be saving some "state" information and always running the state machine from the same starting point.
-;; A content manager web app can afford to bend the rules, and time will tell if we've created a buggy mess.
-
+;; Quick description of v5 state transition table format.
 (comment
   ;; This sort of describes the map of lists of lists that is the state table.
   {:starting-default-state
-   [[#(if-arg :some-key) :other-state]
-    [fn-symbol nil]
-    [#(if-arg :some-other-key other-fn-symbol) nil]
-    [fn-symbol nil]]
+   [[:some-key some-fn-symbol :other-state]
+    [:true fn-symbol nil]
+    [:some-other-key other-fn-symbol nil]
+    [:true fn-symbol nil]]
    :other-state
-   [[site-effect-fn-b nil]
-    [render-html-change-state nil]]}
+   [[:true site-effect-fn-b nil]
+    [:true render-html-change-state nil]]}
   )
 
+;; Default is page_search. (How do you know that?)
 (def table
   {:page_search
-   [[#(if-arg :edit) :edit_page]
-    [#(if-arg :delete) :ask_delete_page]
-    [#(if-arg :insert) :edit_new_page]
-    [#(if-arg :item) :item_search]
-    [#(if-arg :site_gen) :site_gen]
-    [page_search nil]]
+   [[:edit nil :edit_page]
+    [:delete nil :ask_delete_page]
+    [:insert nil :edit_new_page]
+    [:item nil :item_search]
+    [:site_gen nil :site_gen]
+    [:true page_search nil]]
 
    :site_gen
-   [[site_gen nil]
-    [page_search nil]]
+   [[:true site_gen nil]
+    [:true page_search nil]]
 
    :edit_page
-   [[#(if-arg :save (fn [] (save_page) (page_search))) nil]
-    [#(if-arg :continue (fn [] (save_page) (edit_page))) nil]
-    [wait nil]]
+   [[:save (fn [] (save_page) (page_search)) nil]
+    [:continue (fn [] (save_page) (edit_page)) nil]]
 
    :item_search
-   [[#(if-arg :edit) :edit_item]
-    [#(if-arg :page_gen page_gen) nil]
-    [#(if-arg :auto_gen auto_gen) nil]
-    [item_search nil]]
+   [[:edit nil :edit_item]
+    [:page_gen page_gen nil]
+    [:auto_gen auto_gen nil]
+    [:true item_search nil]]
 
    :edit_item
-   [[#(if-arg :save) :save_item]
-    [#(if-arg :continue) :save_item_continue]
-    [#(if-arg :next) :edit_next]
-    [edit_item nil]]
+   [[:save nil :save_item]
+    [:continue nil :save_item_continue]
+    [:next nil :edit_next]
+    [:true edit_item nil]]
 
    :edit_next
-   [[save_item nil]
-    [next_item nil]
-    [edit_item nil]] ;; Assumes we have a good con_pk
+   [[:true save_item nil]
+    [:true next_item nil]
+    [:true edit_item nil]] ;; Assumes we have a good con_pk
 
    :save_item
-   [[save_item nil]
-    [item_search nil]]
+   [[:true save_item nil]
+    [:true item_search nil]]
 
    :save_item_continue
-   [[save_item nil]
-    [edit_item nil]]
+   [[:true save_item nil]
+    [:true edit_item nil]]
 
    :edit_new_page
-   [[#(if-arg :save (fn [xx] (insert_page) (page_search))) nil]
-    [#(if-arg :continue (fn [xx] (insert_page) (edit_page))) nil]
-    [edit_new_page nil]]
+   [[:save (fn [xx] (insert_page) (page_search)) nil]
+    [:continue (fn [xx] (insert_page) (edit_page)) nil]
+    [:true edit_new_page nil]]
    
    :ask_delete_page
-   [[#(if-arg :confirm) :delete_page]
-    [page_search nil]]
+   [[:confirm nil :delete_page]
+    [:true page_search nil]]
 
    :delete_page
-   [[delete_page nil]
-    [page_search nil]]
+   [[:true delete_page nil]
+    [:true page_search nil]]
    })
 
