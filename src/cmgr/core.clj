@@ -39,10 +39,8 @@
                                :d_state (keyword (:d_state yy))))]
       (cmgr.state/set-params temp-params)
       (machine.util/reset-state)
-      ;; (machine.util/reset-history)
+      (machine.util/reset-history)
       (run! #(machine.util/add-state %) (keys temp-params))
-      (prn "temp-params: " @cmgr.state/params)
-      (prn "app-state: " @machine.util/app-state)
       (let [res (machine.util/traverse (or (:d_state temp-params) :page_search) cmgr.state/table)]
         (when res (prn res)))
       {:status 200
