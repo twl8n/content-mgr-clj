@@ -1,4 +1,4 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE HTML>
 <html>
   <head>
     <title>Content Search</title>
@@ -28,7 +28,8 @@
         {{#dcc_site}}
         <tr>
           <td colspan="2" style="background-color: #eeeeee; vertical-align: bottom; padding-top: 16px;"> 
-            <form action="./cmgr" method="post" style="margin-bottom: 0px;">
+            <a id="{{site_name}}"></a>
+            <form action="/cmgr/#{{site_name}}" method="post" style="margin-bottom: 0px;">
               <input name="d_state" value="page_search" type="hidden">
               <input name="site_name" value="{{site_name}}" type="hidden">
               Site name: {{site_name}}
@@ -42,7 +43,7 @@
           <td width="10%">
             <nobr>{{menu}} ({{page_order}})</nobr></td>
           <td width="90%">
-            <form action="./cmgr" method="post" style="margin-bottom: 0px;">
+            <form action="/cmgr" method="post" style="margin-bottom: 0px;">
               <input name="d_state" value="page_search" type="hidden">
               <input name="page_pk" value="{{page_pk}}" type="hidden">
               <div align="justify">

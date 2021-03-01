@@ -156,6 +156,26 @@
         html-result (my-render (slurp "html/edit_item.html") ready-data)]
     (reset! html-out html-result)))
 
+(comment
+  (def site_name "baja_bug")
+  (def result-set (jdbc/execute!
+                    ds-opts
+                    ["select page_pk as menu_page_pk,page_order,page_name,menu,site_path from page where
+			site_name=? and valid_page<>0 order by page_order" site_name]))
+  (def ordinal-set (map-indexed #(assoc %2 :ordinal  %1) result-set))
+  (def desired-columns 5.0M)
+        ;; See Note 1 above.
+  ;; only works if desired-columns is 5M (and not 5.0)
+  (with-precision 1 :rounding CEILING (/ (max desired-columns (count ordinal-set)) desired-columns))
+
+  ;; Seems to work all the time.
+  (Math/ceil (/ (max desired-columns (count ordinal-set)) desired-columns))
+  (Math/ceil (/ (max desired-columns 6) desired-columns))
+  (Math/ceil (/ (max desired-columns 5) desired-columns))
+  (Math/ceil (/ (max desired-columns 4) desired-columns))
+  )
+
+
 ;; Note 1: (see Note 1 below) Use quot to get an integer number of lines from a rounded-up float number of lines.
 ;; Require at least desired-columns as a min that yields 1 line.
 (defn menu_gen
@@ -168,7 +188,7 @@
         ordinal-set (map-indexed #(assoc %2 :ordinal  %1) result-set)
         desired-columns 5.0
         ;; See Note 1 above.
-        number-of-lines (quot (+ 0.5 (/ (max desired-columns (count ordinal-set)) desired-columns)) 1)  ;; 3 for hondavfr
+        number-of-lines (Math/ceil (/ (max desired-columns (count ordinal-set)) desired-columns))
         pb-set (mapv #(assoc % :page_break (mod (:ordinal %) number-of-lines)) ordinal-set)
         ready-data (assoc {} :menu_line (mapv (fn [xx] {:first_col (val xx)}) (group-by :page_break pb-set)))]
     (my-render (slurp "html/menu_template.html") ready-data)))
@@ -295,7 +315,7 @@
                                        :site_name (:site_name @params "") ;; Add new page from existing site or brand new.
                                        :site_path ""
                                        :page_order 0.0
-                                       :valid_page 0
+                                       :valid_page 1
                                        :external_url 0
                                        :ext_zero "selected"
                                        :ext_one ""})]
@@ -400,7 +420,8 @@
 
    :edit_page
    [[:save (fn [] (save_page) (page_search)) nil]
-    [:continue (fn [] (save_page) (edit_page)) nil]]
+    [:continue (fn [] (save_page) (edit_page)) nil]
+    [:edit edit_page nil]]
 
    :item_search
    [[:edit nil :edit_item]
@@ -428,9 +449,9 @@
     [:true edit_item nil]]
 
    :edit_new_page
-   [[:save (fn [xx] (insert_page) (page_search)) nil]
-    [:continue (fn [xx] (insert_page) (edit_page)) nil]
-    [:true edit_new_page nil]]
+   [[:save (fn [] (insert_page) (page_search)) nil]
+    [:continue (fn [] (insert_page) (edit_page)) nil]
+    [:insert edit_new_page nil]]
    
    :ask_delete_page
    [[:confirm nil :delete_page]

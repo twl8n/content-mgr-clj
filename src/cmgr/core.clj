@@ -28,9 +28,11 @@
 ;; Frankly, it would have been easier to use slurp to load static content rather than ring's wrap-file.
 (defn handler
   [request]
-  (if (not= "/cmgr" (:uri request))
+  (if (not (some? (re-matches #".*/cmgr[/]*" (:uri request)))) ;; (not= "/cmgr" (:uri request))
     ;; calling code in ring.middleware.file expects a status 404 when the handler doesn't have an answer.
-    {:status 404 :body (format "Unknown request %.40s ..." (:uri request))}
+    (let [err-return {:status 404 :body (format "Unknown request %.40s ..." (:uri request))}]
+      (print (format "uri: %s\n" (:uri request))) (flush)
+      err-return)
     (let [temp-params (as-> request yy
                         (:form-params yy) ;; We only support POST requests now.
                         (reduce-kv #(assoc %1 (keyword %2) (clojure.string/trim %3))  {} yy)
@@ -40,11 +42,27 @@
       (machine.util/reset-state)
       (machine.util/reset-history)
       (run! #(machine.util/add-state %) (keys temp-params))
+
+      (print (format "temp-params: %s\n" temp-params)) (flush)
+      (print (format "app-state: %s\n\n" @app-state)) (flush)
+      (print (format "uri: %s\n" (:uri request))) (flush)
+
       (let [res (machine.util/traverse (or (:d_state temp-params) :page_search) cmgr.state/table)]
         (when res (prn res)))
+
+      ;; Can we change the uri during the response? Yes, I think putting a Location header in here forces the
+      ;; uri back to what we want, clearing any anchor/id values, and any other cruft.
+      ;; NOTE: "./cmgr" just creates a mess, post-pending "/cmgr" on the uri. 
       {:status 200
-       :headers {"Content-Type" "text/html"}
+       :headers {"Location" "/cmgr" "Content-Type" "text/html"}
        :body @cmgr.state/html-out})))
+
+(comment
+  ;; This might not be what we want to fix a uri.
+  (-> (ringu/redirect requri)
+      (assoc :session new-session)
+      (assoc :headers {"Content-Type" "text/html"}))
+  )
 
 (defn get-conf [ckey]
   (ckey @cmgr.state/config))
