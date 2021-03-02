@@ -13,7 +13,7 @@
       <tr> 
         <td bgcolor="#99CCCC" valign=top> 
           <div align="center">
-            <form action="./cmgr" method=POST>
+            <form action="/cmgr" method=POST>
 	      <input type="hidden" name="d_state" value="{{d_state}}">
 	      <input type="hidden" name="page_pk" value="{{page_pk}}">
               <input type="hidden" name="site_name" value="{{site_name}}">
@@ -24,7 +24,7 @@
           <table border=0 cellpadding=0 cellspacing=0 width="100%">
 	    <tr valign="top">
 	      <td>
-	        <form action="./cmgr" method=POST>
+	        <form action="/cmgr" method=POST>
                   <input type="hidden" name="d_state" value="page_search">
                   <input type="submit" name="submit" value="Site/page list">
                 </form>
@@ -32,7 +32,7 @@
 	        page_pk: {{page_pk}}
 	      </td>
 	      <td>
-                <form action="./cmgr" method="post">
+                <form action="/cmgr" method="post">
 	          <input type="hidden" name="d_state" value="{{d_state}}">
 	          <input type="hidden" name="page_pk" value="{{page_pk}}">
                   <input type="hidden" name="site_name" value="{{site_name}}">
@@ -40,7 +40,7 @@
                 </form>
 	      </td>
 	      <td>
-                <form action="./cmgr" method="post">
+                <form action="/cmgr" method="post">
 	          <input type="hidden" name="d_state" value="{{d_state}}">
 	          <input type="hidden" name="page_pk" value="{{page_pk}}">
 	          <input type="hidden" name="site_name" value="{{site_name}}">
@@ -48,7 +48,7 @@
                 </form>
 	      </td>
 	      <td>
-                <form action="./cmgr" method="post">
+                <form action="/cmgr" method="post">
 	          <input type="hidden" name="d_state" value="{{d_state}}">
 	          <input type="hidden" name="page_pk" value="{{page_pk}}">
 	          <input type="submit" name="auto_gen" value="Auto Gen Items">
@@ -64,7 +64,7 @@
       {{#content}}
       <tr> 
         <td bgcolor="#EEEEEE">
-          <form action="./cmgr" method="post">
+          <form action="/cmgr" method="post">
 	    <input type="hidden" name="d_state" value="{{d_state}}">
 	    <input type="hidden" name="con_pk" value="{{con_pk}}">
             <input type="hidden" name="site_name" value="{{site_name}}">

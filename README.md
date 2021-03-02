@@ -19,6 +19,11 @@ You need a sqlite database named cmgr.db.
 
 #### todo
 
+- 2021-03-01 Add a "build all" button.
+
+- 2021-03-01 Save and Edit button on edit_new_page to save and go to the edit content (item_search.html)
+Maybe also print some hints about what images path to use with mkdir.
+
 - 2021-02-27 Is machine.core a necessary requirement in core.clj? In state.clj?
 
 - 2021-02-12 Maybe strip all exif from jpeg images. Converting to pnm and back to jpeg should work.
