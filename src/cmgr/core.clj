@@ -28,10 +28,10 @@
 ;; Frankly, it would have been easier to use slurp to load static content rather than ring's wrap-file.
 (defn handler
   [request]
-  (if (not (some? (re-matches #".*/cmgr[/]*" (:uri request)))) ;; (not= "/cmgr" (:uri request))
+  (if (not (some? (re-matches #".*/cmgr[/]*" (:uri request))))
     ;; calling code in ring.middleware.file expects a status 404 when the handler doesn't have an answer.
     (let [err-return {:status 404 :body (format "Unknown request %.40s ..." (:uri request))}]
-      (print (format "uri: %s\n" (:uri request))) (flush)
+      ;; (print (format "uri: %s\n" (:uri request))) (flush)
       err-return)
     (let [temp-params (as-> request yy
                         (:form-params yy) ;; We only support POST requests now.
@@ -42,11 +42,6 @@
       (machine.util/reset-state)
       (machine.util/reset-history)
       (run! #(machine.util/add-state %) (keys temp-params))
-
-      (print (format "temp-params: %s\n" temp-params)) (flush)
-      (print (format "app-state: %s\n\n" @app-state)) (flush)
-      (print (format "uri: %s\n" (:uri request))) (flush)
-
       (let [res (machine.util/traverse (or (:d_state temp-params) :page_search) cmgr.state/table)]
         (when res (prn res)))
 

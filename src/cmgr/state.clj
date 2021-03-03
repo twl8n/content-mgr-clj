@@ -49,9 +49,12 @@
 (defn set-params [xx]
   (reset! params xx))
   
+;; siv does the data side of scrollIntoView() javascript at the bottom of page_search.html
+;; It is a context sensitive way to scroll page_search to whatever page we're working on most recently.
 (defn page_search []
   (let [result-set (jdbc/execute! ds-opts ["select * from page where valid_page=1 order by site_name,page_order"])
         db-data {:dcc_site (mapv (fn [xx] {:site_name (key xx)
+                                           :siv (if (= (key xx) (:from_page @params nil)) true false)
                                            :dcc_page (val xx)}) (group-by :site_name result-set))}
         recf (count (:dcc_site db-data))
         ready-data (merge @params

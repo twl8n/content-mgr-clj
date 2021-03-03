@@ -28,9 +28,10 @@
         {{#dcc_site}}
         <tr>
           <td colspan="2" style="background-color: #eeeeee; vertical-align: bottom; padding-top: 16px;"> 
-            <a id="{{site_name}}"></a>
+            <a {{#siv}}id="scroll"{{/siv}} xid="{{site_name}}"></a>
             <form action="/cmgr/#{{site_name}}" method="post" style="margin-bottom: 0px;">
               <input name="d_state" value="page_search" type="hidden">
+              <input type="hidden" name="from_page" value="{{site_name}}">
               <input name="site_name" value="{{site_name}}" type="hidden">
               Site name: {{site_name}}
               <input name="insert" value="Insert New Page" type="submit">
@@ -58,5 +59,8 @@
       </tbody>
     </table>
     Template: page_search.html state: {{d_state}}
+    <script>
+      document.getElementById("scroll").scrollIntoView();
+    </script>
   </body>
 </html>

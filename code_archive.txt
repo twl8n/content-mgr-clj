@@ -1,3 +1,17 @@
+2021-03-02
+
+;; for autofocus, add this line to the map returned by the anon fn in db-data
+      :autofocus (if (= (key xx) (:from_page @params nil)) "autofocus" "")
+
+
+        <tr><td>
+            <form action="/cmgr" method="post" style="margin-bottom: 0px;">
+              <input name="reset af" value="reset af" type="submit" {{autofocus}}>
+            </form>
+        </td></tr>
+
+
+
 ;; 2021-02-27
 (defn go-again []
   (print "Go again?")
