@@ -2,7 +2,9 @@
 
 Photos essay content manager written in Clojure. 
 
-This app is not complete, and only partiallly working. It is being ported from an old Perl app.
+This app is used to edit content and create static HTML photo essay web sites. Here is an example:
+
+http://laudeman.com/bmw_r850r/index.html
 
 #### Usage
 
@@ -10,12 +12,41 @@ This app is not complete, and only partiallly working. It is being ported from a
 
 In a web browser go to: http://localhost:8080/cmgr
 
+
+
 #### Requirements
 
 You need a sqlite database named cmgr.db.
 
 `sqlite3 cmgr.db < schema_sqlite.sql`
 
+In your home directory, create a .cmgr file. Currently, there must be a full, absolute path to the working directory.
+
+```
+;; Config file for Tom's content manager https://github.com/twl8n/content-mgr-clj
+export-path /Users/twl/Sites/content-manager-pages
+```
+In that directory, each "site" has a directory. Inside the site directory must be a directory "images" which is shared by all pages within that site. Under images are directories for each "page" in the site. You must create a "nav.html" left page navigation HTML snippet file in the export directory.
+
+```
+export-path-site-one
+          |-site-two
+          |-nav.html
+          |-images
+                 |-page-one
+                 |-page-two
+```
+
+You must plan your site, create the directory structure, and copy jpeg images into the page subdirectories.
+The jpeg image file names must have a specific suffix: _n.jpg where n is an integer (with optional leading
+zero).
+
+In the application, you must create sites and pages to match the directory tree you've created. The app will
+auto create new (blank) items for each image within a given page.
+
+Once items are created, use the app to add a text description for each image. Image may be reordered.
+
+The "site gen" and "page gen" features will generate sites and pages, including menus.
 
 #### todo
 
