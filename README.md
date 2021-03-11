@@ -13,10 +13,13 @@ http://laudeman.com/bmw_r850r/index.html
 In a web browser go to: http://localhost:8080/cmgr
 
 
-
 #### Requirements
 
-You need a sqlite database named cmgr.db.
+SQLite https://sqlite.org/download.html
+NetPBM http://netpbm.sourceforge.net/
+Clojure https://clojure.org/guides/getting_started
+
+You need a sqlite database named cmgr.db. Create it in the same directory as the app. (Someday, I'll move the db file to the export directory.)
 
 `sqlite3 cmgr.db < schema_sqlite.sql`
 
@@ -26,29 +29,55 @@ In your home directory, create a .cmgr file. Currently, there must be a full, ab
 ;; Config file for Tom's content manager https://github.com/twl8n/content-mgr-clj
 export-path /Users/twl/Sites/content-manager-pages
 ```
-In that directory, each "site" has a directory. Inside the site directory must be a directory "images" which is shared by all pages within that site. Under images are directories for each "page" in the site. You must create a "nav.html" left page navigation HTML snippet file in the export directory.
+
+In that directory, each "site" has a directory. Inside the
+site directory must be a directory "images" which is shared
+by all pages within that site. Under images are directories
+for each "page" in the site. You must create a "nav.html"
+left page navigation HTML snippet file in the export
+directory.
+
 
 ```
-export-path-site-one
+export-path
+          |-site-one
           |-site-two
           |-nav.html
           |-images
                  |-page-one
+                          |-img_1.jpeg
+                          |-img_2.jpeg
                  |-page-two
+                          |-img_03.jpg
+                          |-img_04.jpg
 ```
 
 You must plan your site, create the directory structure, and copy jpeg images into the page subdirectories.
 The jpeg image file names must have a specific suffix: _n.jpg where n is an integer (with optional leading
-zero).
+zero). For example: img_1.jpg
 
 In the application, you must create sites and pages to match the directory tree you've created. The app will
 auto create new (blank) items for each image within a given page.
 
 Once items are created, use the app to add a text description for each image. Image may be reordered.
 
-The "site gen" and "page gen" features will generate sites and pages, including menus.
+The "site gen" and "page gen" features will generate sites
+and pages, including menus. All the static html files are
+created at the top level, so you must choose unique page
+names.
+
+Rsync each site to the server. Here's an example rsync command:
+
+```
+cd ~/myexport
+rsync -azvP --delete site-one myserver:public_html/myboringlife/
+```
+
+
 
 #### todo
+
+- 2021-03-10 Generalize the Babashka script I use for rsync, add to this repo, write instructions.
 
 - 2021-03-01 Add a "build all" button.
 
