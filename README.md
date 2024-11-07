@@ -19,16 +19,20 @@ SQLite https://sqlite.org/download.html
 NetPBM http://netpbm.sourceforge.net/
 Clojure https://clojure.org/guides/getting_started
 
-You need a sqlite database named cmgr.db. Create it in the same directory as the app. (Someday, I'll move the db file to the export directory.)
 
-`sqlite3 cmgr.db < schema_sqlite.sql`
-
-In your home directory, create a .cmgr file. Currently, there must be a full, absolute path to the working directory.
+In your home directory, create a .cmgr file. The key export-path is a full, absolute path to the working directory. The key db-path is a full, absolute path to the database file.
 
 ```
 ;; Config file for Tom's content manager https://github.com/twl8n/content-mgr-clj
-export-path /Users/twl/Sites/content-manager-pages
+export-path /Users/zeus/Sites/content-manager-pages
+db-path /Users/zeus/cmgr.db
 ```
+
+You need a sqlite database named cmgr.db. Create it in a directory that is not the app source, and not the
+export directory. Put the db file path in .cmgr config file.
+
+`sqlite3 cmgr.db < schema_sqlite.sql`
+
 
 In that directory, each "site" has a directory. Inside the
 site directory must be a directory "images" which is shared
@@ -76,6 +80,10 @@ rsync -azvP --delete site-one myserver:public_html/myboringlife/
 
 
 #### todo
+
+- (done) 2024-11-06 Add database path to .cmgr. 
+
+- (done) 2024-11-06 Ignore favicon.
 
 - 2021-03-10 Generalize the Babashka script I use for rsync, add to this repo, write instructions.
 
