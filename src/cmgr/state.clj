@@ -18,21 +18,25 @@
    (clostache/render template data)
    #"[\\]{1}(.)" "$1"))
 
-;; System wide config.
-(def config (atom {:export-path (System/getenv "HOME")}))
+;; System wide config, with some defaults.
+(def config 
+  (atom {:export-path (System/getenv "HOME")
+         :db-path (System/getenv "HOME")}))
 
 (defn set-config
-  "Arg is a map. We need :export-path"
+  "Arg is a map. We need :export-path, :db-path. Override compile time defaults by calling read-config at runtime."
   [new-config]
   (reset! config new-config))
 
 ;; This won't work until cmgr.core has finished compiling, thus we use `resolve`.
-(when (resolve 'cmgr.core/init-config) (set-config ((eval (resolve 'cmgr.core/init-config)))))
+;; todo: explain how this works and why.
+(when (resolve 'cmgr.core/init-config)
+  (set-config ((eval (resolve 'cmgr.core/init-config)))))
 
 (def html-out (atom ""))
 
 ;; I think db is a "connection"
-(def db {:dbtype "sqlite" :dbname "cmgr.db"})
+(def db {:dbtype "sqlite" :dbname (format "%s/cmgr.db" (:db-path @config))})
 
 ;; 2021-01-31 We could use rs/as-unqualified-lower-maps, but since we're using lowercase in our schema,
 ;; and since we're used to sql drivers returning the case shown in the schema (or uppercase) we don't have to

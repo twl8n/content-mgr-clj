@@ -13,6 +13,9 @@
 ;; Workaround for the namespace changing to "user" after compile and before -main is invoked
 (def true-ns (ns-name *ns*))
 
+;; This would be simpler (?), more secure, more reliable if it only accepted certain keys.
+;; export-path
+;; db-path
 (defn read-config
   "Read .cmgr in the user's home dir. Strip comments and blank lines."
   []
@@ -62,6 +65,17 @@
 (defn get-conf [ckey]
   (ckey @cmgr.state/config))
 
+;; Ignore favicon.ico
+;; Name prefix local- to distinguish it from ring.middleware
+;; (local-wrap-ignore-favicon [handler]
+;;
+(defn local-wrap-ignore-favicon [handler]
+  (fn [request]
+    (if (= (:uri request) "/favicon.ico")
+      {:status 404}
+      (handler request))))
+
+
 ;; Note: wrap-file is not quite cooked. For the URL "http://host/foo" it returns the
 ;; file "some-path/foo/index.html", the URI is not ".../" or ".../index.html" and all the relative links in
 ;; the resulting page will be broken. Happily, we have very little need for static content. Just beware. When
@@ -70,16 +84,19 @@
 ;; 2021-02-19 20:21:44.408:WARN:oejs.HttpChannel:qtp1417854124-16: /images/piaa/IMG_2501_s.jpg
 ;; java.lang.NullPointerException: Response map is nil
 
-;; Deep inside ring.middleware.file, if file-request can't find a file, it returns a nil response map which results in a 500 error.
-;; I really think it should return a 404, since a missing file isn't generally considered a hard fail.
+;; Deep inside ring.middleware.file, if file-request can't find a file, it returns a nil response map which
+;; results in a 500 error. I really think it should return a 404, since a missing file isn't generally
+;; considered a hard fail.
 
-;; The handler is basically a callback that the wrappers may choose to run. Assuming the wrappers call the handler, the wrappers
-;; can modify the request before passing it to the handler, and/or modify the response from the handler.
+;; The handler is basically a callback that the wrappers may choose to run. Assuming the wrappers call the
+;; handler, the wrappers can modify the request before passing it to the handler, and/or modify the response
+;; from the handler.
 
 ;; We need to dynamically discover the export path at run time, NOT compile time, therefor we must
 ;; use defn and not def (as you will see in every other ring server example). 
 (defn make-app [& args]
   (-> handler
+      (local-wrap-ignore-favicon)
       (wrap-file (get-conf :export-path) {:allow-symlinks? true
                                           :prefer-handler? true})
       (wrap-multipart-params)
