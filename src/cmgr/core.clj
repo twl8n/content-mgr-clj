@@ -8,7 +8,8 @@
             [ring.util.response :as ringu]
             [ring.middleware.file :refer [wrap-file]]
             [ring.middleware.params :refer [wrap-params]]
-            [ring.middleware.multipart-params :refer [wrap-multipart-params]])
+            [ring.middleware.multipart-params :refer [wrap-multipart-params]]
+            [clojure.java.shell :as shell])
   (:gen-class))
 ;; Workaround for the namespace changing to "user" after compile and before -main is invoked
 (def true-ns (ns-name *ns*))
@@ -34,7 +35,7 @@
   (if (not (some? (re-matches #".*/cmgr[/]*" (:uri request))))
     ;; calling code in ring.middleware.file expects a status 404 when the handler doesn't have an answer.
     (let [err-return {:status 404 :body (format "Unknown request %.40s ..." (:uri request))}]
-      ;; (print (format "uri: %s\n" (:uri request))) (flush)
+      (print (format "404 uri: %s\n" (:uri request))) (flush)
       err-return)
     (let [temp-params (as-> request yy
                         (:form-params yy) ;; We only support POST requests now.
@@ -47,7 +48,7 @@
       (run! #(machine.util/add-state %) (keys temp-params))
       (let [res (machine.util/traverse (or (:d_state temp-params) :page_search) cmgr.state/table)]
         (when res (prn res)))
-
+      
       ;; Can we change the uri during the response? Yes, I think putting a Location header in here forces the
       ;; uri back to what we want, clearing any anchor/id values, and any other cruft.
       ;; NOTE: "./cmgr" just creates a mess, post-pending "/cmgr" on the uri. 
@@ -116,4 +117,6 @@
   (print (format "%s\n" @cmgr.state/config))
   (ds)
   (prn "server: " server)
-  (.start server))
+  (.start server)
+  (shell/sh "open" "http://localhost:8080/cmgr")
+  )

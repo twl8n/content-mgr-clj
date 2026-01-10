@@ -34,12 +34,10 @@ export directory. Put the db file path in .cmgr config file.
 `sqlite3 cmgr.db < schema_sqlite.sql`
 
 
-In that directory, each "site" has a directory. Inside the
-site directory must be a directory "images" which is shared
-by all pages within that site. Under images are directories
-for each "page" in the site. You must create a "nav.html"
-left page navigation HTML snippet file in the export
-directory.
+In that directory, each "site" has a directory. Inside the site directory must be a directory "images" which
+is shared by all pages within that site. Under images are directories for each "page" in the site. You must
+create a "nav.html" left page navigation HTML snippet file in the export directory. Yes, you manually create a
+file containing an HTML snippet. Base your navigation on ./html/nav-demo.html
 
 
 ```
@@ -80,6 +78,14 @@ rsync -azvP --delete site-one myserver:public_html/myboringlife/
 
 
 #### todo
+
++ 2026-01-10 Open the home page when the app launches.
+
+- 2026-01-10 java.lang.NullPointerException: Response map is nil or when the state machine has a problem.
+ Basically, a nil response map should never occur, but we need to handle it if it does. When the response map
+ is nil, load the home page http://localhost:8080/cmgr
+
+- 2024-11-07 Feature, correctly handle vertical images.
 
 - (done) 2024-11-06 Add database path to .cmgr. 
 

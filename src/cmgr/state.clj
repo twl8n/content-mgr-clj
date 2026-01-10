@@ -349,8 +349,7 @@
         image_name (str/replace full_name #".*\/(.*)" "$1")
         xsize 320
         cmd (format "jpegtopnm < %s | pnmscale -xsize=%s | pnmtojpeg > %s 2>&1" full_name xsize full_s_name)
-        conv_results
-        (shell/sh "sh" "-c" cmd)
+        conv_results (shell/sh "sh" "-c" cmd)
         [image_width image_height] (get_wh full_name)
         [s_width s_height] (get_wh full_s_name)
         {:keys [exists]} (jdbc/execute-one!
@@ -372,12 +371,65 @@
       (sql/insert! ds-opts :content insert-data)))
   (inc item_order))
 
+;; 2024-11-07 auto_gen images. Use any image in the directory. Sequence is based on string sorting.
+(comment 
+  (pprint (.list (io/file "/Users/twl/Sites/content-manager-pages/1990_f250/images/camperv3/")))
+  (def xx
+    (let [filter-fn (fn [xx] (re-find #"(?i).*\.jp.*g" xx))
+          remove-fn (fn [xx] (re-find #"(?i).*_s\.jp.*g" xx))]
+      (->> (.list (io/file (format "%s/%s/images/%s" "/Users/twl/Sites/content-manager-pages" "1990_f250" "camperv3")))
+           (filter filter-fn)
+           (remove remove-fn)
+           (sort))
+      ))
+)
+
+;; Any non-thumbnail jpeg is ok. Get all jpeg, then remove *_s.jpg small thunbnail files.
+;; Need to check exif orientation, and use jpegtran to rotate, before creating thumbnails.
+;; Maybe separate out file munging from database record insert.
+
+(defn auto_gen []
+  (let [page_pk (:page_pk @params)
+        {:keys [site_path image_dir]} (jdbc/execute-one!
+                                       ds-opts
+                                       ["select site_path, image_dir from page where page_pk=?" page_pk])
+        filter-fn (fn [xx] (re-find #"(?i).*\.jp.*g" xx))
+        remove-fn (fn [xx] (re-find #"(?i).*_s\.jp.*g" xx))
+        file-list (->> (.list (io/file (format "%s/%s/images/%s" (:export-path @config) site_path image_dir)))
+                       (filter filter-fn)
+                       (remove remove-fn)
+                       (sort))
+        page-data {:page_pk page_pk :site_path site_path :image_dir image_dir}]
+    ;; Rotate images
+
+    ;; Using reduce this way is like run! with an (ordinal) index
+    (reduce #(gen-core page-data %2 %1) 1 file-list)))
+
+
+(defn auto_gen_1 []
+  (let [page_pk (:page_pk @params)
+        {:keys [site_path image_dir]} (jdbc/execute-one!
+                                       ds-opts
+                                       ["select site_path, image_dir from page where page_pk=?" page_pk])
+        sort-fn (fn [xx]
+                  (Integer. (nth (re-matches #"(?i)(?:.*\/)*.*_(\d+)\.jp.*g" xx) 1 "0")))
+        filter-fn (fn [xx] (re-find #"(?i).*_\d+\.jp.*g" xx))
+        file-list (->> (.list (io/file (format "%s/%s/images/%s" (:export-path @config) site_path image_dir)))
+                       (filter filter-fn)
+                       (sort-by sort-fn))
+        page-data {:page_pk page_pk :site_path site_path :image_dir image_dir}]
+    ;; Using reduce this way is like run! with an (ordinal) index
+    (reduce #(gen-core page-data %2 %1) 1 file-list)))
+
+;; 2024-11-07 auto_gen_1 has issues. Image file names must be in a certain format, and must contain a number.
+;; The number is used to order the files in sequence. That has often gone wrong, and ends up requiring manual
+;; correction by setting the page order. Therefore, create a new auto_gen, above.
 
 ;; Create a file-list that only contains good jpeg files, in order of their numeric suffix. Send that list to
 ;; gen-core to resize images, gather necessary bookkeeping data, and insert a content item into the db for each
 ;; image.
 
-(defn auto_gen []
+(defn auto_gen_1 []
   (let [page_pk (:page_pk @params)
         {:keys [site_path image_dir]} (jdbc/execute-one!
                                        ds-opts
