@@ -79,6 +79,18 @@ rsync -azvP --delete site-one myserver:public_html/myboringlife/
 
 #### todo
 
++ 2026-01-10 Change nav-demo.html and nav.html to modern hamburger mobile menu
+
+- 2026-01-10 What is:
+> clojure -m cmgr.core
+WARNING: Implicit use of clojure.main with options is deprecated, use -M -m cmgr.core
+
+
+- 2026-01-10 Try to move 404 and other error processing inside the state machine.
+
+- 2026-01-10 Need more docs on each part of the state machine hash and args, which should be easy since I've
+  forgotten how it all works.
+
 + 2026-01-10 Open the home page when the app launches.
 
 - 2026-01-10 java.lang.NullPointerException: Response map is nil or when the state machine has a problem.
