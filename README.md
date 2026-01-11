@@ -79,7 +79,9 @@ rsync -azvP --delete site-one myserver:public_html/myboringlife/
 
 #### todo
 
-+ 2026-01-10 Change nav-demo.html and nav.html to modern hamburger mobile menu
+- 2026-01-10 Move image_t navigation to the top of the page. Unclear why it has been at the bottom?
+
+x 2026-01-10 Change nav-demo.html and nav.html to modern hamburger mobile menu
 
 - 2026-01-10 What is:
 > clojure -m cmgr.core
