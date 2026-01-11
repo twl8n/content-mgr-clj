@@ -110,11 +110,12 @@ hold the content and correct for the negative left margin. */
 
 #content {
     position: relative; 
-    float: left;
-    /* the content div has a positive margin */
-    left: 2%; 
-    right: 70%; 
-    width: 72%; 
+    /* float: left; */
+    /* the content div had a positive margin before we centered everything*/
+    /* left: 2%; */
+    /* right: 70%; */
+    width: 800px; /* 72%; */
+    margin: auto;
 }
 
 /* media="only screen and (max-device-width: 480px)" */
@@ -277,6 +278,10 @@ p {
       border-style: double; */
 }
 
+.body_title {
+    font-size: 1.5em;
+    font-weight: bold;
+}
 
 .old_main {
     position: absolute;

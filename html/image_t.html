@@ -5,13 +5,13 @@
     <title>{{page_title}}</title>
     <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
     <link rel="stylesheet" href="../cm_std.css" type="text/css">
+    <link rel="stylesheet" href="../side_bar.css" type="text/css">
   </head>
   <body bgcolor="#FFFFFF" text="#000000">
     {{&nav}}
     <div id="content">
-      <p>
-	<b>{{body_title}}</b> 
-      </p>
+      <button class="openbtn" onclick="openNav()">&#9776;</button>
+      <b class="body_title">{{body_title}}</b> 
       <p>
 	<nobr>
           {{#prev}}<a href="{{prev-name}}">Previous image</a>{{/prev}}{{^prev}}(no previous image){{/prev}} |
@@ -30,5 +30,19 @@
       </p>
       <hr>
     </div>
+    <script>
+      function openNav() {
+      console.log("openNav");
+          document.getElementById("mySidebar").style.width = "250px";
+          document.getElementById("main").style.marginLeft = "250px";
+      }
+      
+      function closeNav() {
+      console.log("closeNav");
+          document.getElementById("mySidebar").style.width = "0";
+          document.getElementById("main").style.marginLeft= "0";
+      }
+    </script>
+
   </body>
 </html>

@@ -10,18 +10,9 @@
   <body bgcolor="#FFFFFF" text="#000000">
     {{&nav}}
 
-    <div id="main">
-      <!-- firefox doesn't like the literal hamburger character. -->
-      <!-- <button class="openbtn" onclick="openNav()">☰ Open Sidebar</button> -->
-      <button class="openbtn" onclick="openNav()">&#9776; Open Sidebar</button>
-      <h2>Collapsed Sidebar</h2>
-      <p>Click on the hamburger menu/bar icon to open the sidebar, and push this content to the right.</p>
-    </div>
-
     <div id="content">
-
-
-      <div align="center">{{body_title}}</div>
+      <button class="openbtn" onclick="openNav()">&#9776;</button>
+      <span align="center" class="body_title">{{body_title}}</span>
       {{&menu_text}}
       <hr>
       <div class="entry">
