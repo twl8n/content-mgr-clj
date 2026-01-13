@@ -31,6 +31,8 @@
 img {
     padding: 0.5em;
     position: relative; 
+    max-width: 90%;
+    height: auto;
     /* border: #669933; */
     /* border-style: double; */
 }
@@ -41,9 +43,10 @@ img {
      font-family: Arial, Helvetica, sans-serif;
      font-size: 1em;
      text-align: justify;
+     padding-bottom: 10px;
      /* margin-top: 0.5em; */
      /* margin-bottom: 2em; */
-     /* margin-left: 2em; */
+     /* margin-left: 0.5em; */
      /* margin-right: 0.5em; */
      /* border: #669933;   */
      /* border-style: solid;   */
@@ -64,11 +67,13 @@ img {
 body {
     background: grey; 
     background-color: #FFFFFF; 
-    margin: 0; /*  does not default to zero. */
+    /* margin: 0; */ /*  does not default to zero. */
+    margin-left: 0.5em;
+    margin-right: 0.5em;
     position: relative; 
     /* display: block;  */
     /*      max-width: 98%;  */
-    width: 100%;
+    max-width: 800px;
     text-align: left; 
     
     /* min-height: 10em;  */
@@ -114,8 +119,8 @@ hold the content and correct for the negative left margin. */
     /* the content div had a positive margin before we centered everything*/
     /* left: 2%; */
     /* right: 70%; */
-    width: 800px; /* 72%; */
-    margin: auto;
+    /* width: 800px; */ /* 72%; */
+    /* margin: auto; */
 }
 
 /* media="only screen and (max-device-width: 480px)" */
@@ -127,13 +132,21 @@ hold the content and correct for the negative left margin. */
 
 @media only screen and (max-device-width: 480px) {
     #content {
-	position: relative; 
+	/* position: relative; */
 	float: left;
 	/* the content div has a positive margin */
-	left: 2%; 
-	right: 40%; 
-	width: 42%; 
+	/* left: 2%; */
+	/* right: 4%; */
+	/* width: 42%;  */
+        /* margin: auto;*/
+        margin-left: 2%;
+        margin-right: 2%;
     }
+
+    #entry {
+        padding-bottom: 5px;
+    }
+
 }
 
 h1 {

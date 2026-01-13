@@ -1,39 +1,36 @@
 
-{:deps
+{;; config for build
+ :paths ["src"] ;; project paths
+
+ :deps
  {
   ;; By specifying a clojure version in :deps, we will override the installed, default version.
-  ;; org.clojure/clojure {:mvn/version "1.9.0"}
-  org.clojure/clojure {:mvn/version "1.10.2"}
+  org.clojure/clojure {:mvn/version "1.12.4"} 
   org.xerial/sqlite-jdbc {:mvn/version "3.21.0"}
   de.ubercode.clostache/clostache {:mvn/version "1.4.0"}
-  seancorfield/next.jdbc {:mvn/version "1.1.613"} ;; Requires clojure 1.10.2
-  ring {:mvn/version "1.8.2"}
+  seancorfield/next.jdbc {:mvn/version "1.2.659"} ;; Requires clojure 1.10.2
+  ring/ring {:mvn/version "1.15.3"}
   ;; machine/machine {:local/root "../machine"}
+  ;; git rev-parse --verify HEAD
   github-twl8n/machine {:git/url "https://github.com/twl8n/machine"
-                        :sha "818759f86b8589e8143e18e800967ddeda26567d"}
+                        :sha "fc63f5657887be281069607a4e2ef8555d0c7230"}
   }
 
  :aliases 
- {:nrepl {:extra-deps {nrepl/nrepl {:mvn/version "0.8.3"}
+ {
+  ;; Build-related, obviously
+  ;; Run with clj -T:build function-in-build
+  ;; Current as of 2026-01-12
+  ;; https://github.com/clojure/tools.build#release-information
+  :build {:deps {io.github.clojure/tools.build {:git/tag "v0.10.12" :git/sha "97c5562"}}
+          :ns-default build}
+
+  ;; other, non-build-ish?
+  :nrepl {:extra-deps {nrepl/nrepl {:mvn/version "0.8.3"}
                        cider/cider-nrepl {:mvn/version "0.25.5"}}
           :main-opts ["-m" "nrepl.cmdline"
                       "--middleware" "[cider.nrepl/cider-middleware]"
                       ]}
-  ;; graalvm
-  :native-image
-  {:main-opts ["-m clj.native-image core"
-               "--initialize-at-build-time"
-               ;; optional native image name override
-               "-H:Name=core"]
-   :jvm-opts ["-Dclojure.compiler.direct-linking=true"]
-
-   ;; https://github.com/taylorwood/clj.native-image#contributing
-   ;; You'll need Clojure CLI tooling and GraalVM installed to test locally. Just change the source of the
-   ;; clj.native-image dependency to a :local/root instead of :git/url.
-
-   :extra-deps
-   {clj.native-image
-    {:git/url "https://github.com/taylorwood/clj.native-image.git"
-     :sha "7708e7fd4572459c81f6a6b8e44c96f41cdd92d4"}}}}}
+  }}
 
 

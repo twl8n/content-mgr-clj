@@ -8,10 +8,22 @@ http://laudeman.com/bmw_r850r/index.html
 
 #### Usage
 
-`clojure -m cmgr.core`
+At the command line:
 
-In a web browser go to: http://localhost:8080/cmgr
+`clj -X cmgr.core/-main`
 
+or:
+
+`clojure -X cmgr.core/-main`
+
+The program runs, and your default web browser will open with:
+
+`http://localhost:8080/cmgr`
+
+This works for me on MacOS 13.7.7. If the web browser doesn't open automatically, you'll have to do it yourself, and visit the URL above.
+
+
+todo: See https://clojure.org/guides/deps_and_cli#_using_git_libraries
 
 #### Requirements
 
@@ -78,6 +90,8 @@ rsync -azvP --delete site-one myserver:public_html/myboringlife/
 
 
 #### todo
+
+- 2026-01-11 Lost the site name/description/title. Need to add it back. 
 
 - 2026-01-10 Move image_t navigation to the top of the page. Unclear why it has been at the bottom?
 

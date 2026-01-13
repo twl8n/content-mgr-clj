@@ -11,8 +11,6 @@
             [ring.middleware.multipart-params :refer [wrap-multipart-params]]
             [clojure.java.shell :as shell])
   (:gen-class))
-;; Workaround for the namespace changing to "user" after compile and before -main is invoked
-(def true-ns (ns-name *ns*))
 
 ;; This would be simpler (?), more secure, more reliable if it only accepted certain keys.
 ;; export-path
@@ -111,10 +109,10 @@
 (defn -main
   "Parse the states.dat file."
   [& args]
-  ;; Workaround for the namespace changing to "user" after compile and before -main is invoked
-  (in-ns true-ns)
+  ;; (print (format "start ns: %s true-ns:%s\n" *ns* true-ns))
+  ;; (print (format "now in ns: %s\n" *ns*))
   (cmgr.state/set-config (read-config))
-  (print (format "%s\n" @cmgr.state/config))
+  (print (format "config:\n%s\n" @cmgr.state/config))
   (ds)
   (prn "server: " server)
   (.start server)
